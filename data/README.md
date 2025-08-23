@@ -1,0 +1,1 @@
+This folder contains the data on which the models in trained_models are trained
