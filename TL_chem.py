@@ -32,7 +32,7 @@ import json
 import transformer_lens as tl
 
 from utils.tl_conversion import load_chemberta_models
-from utils.tl_validation import validate_conversion
+from utils.tl_validation import validate_conversion, test_prediction_equivalence
 
 
 # %%
@@ -47,15 +47,36 @@ NORMALIZATION_PIPELINE_PATH = "trained_models/ESOL/chemberta/normalization_pipel
 TARGET_COLUMN = "measured log solubility in mols per litre"
 print(DEVICE)
 # %%
-hf_encoder, tl_encoder, tokenizer, hf_regressor, normalization_pipeline = load_chemberta_models(
-    MODEL_PATH, TOKENIZER_NAME, DEVICE, NORMALIZATION_PIPELINE_PATH, TARGET_COLUMN
+hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, normalization_pipeline = load_chemberta_models(
+    MODEL_PATH, TOKENIZER_NAME, DEVICE, NORMALIZATION_PIPELINE_PATH
 )
-print(hf_encoder, tl_encoder, tokenizer, hf_regressor, normalization_pipeline)
+print(hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, normalization_pipeline)
 # %% [markdown]
-# Validating conversation (check whether the two models have the same output, extremely important!)
+# Validating conversation (check whether the two models have the same internals and output, extremely important!)
+# First check internal and then output
 # %%
 test_smiles = "CCO"
 inputs = tokenizer(test_smiles, return_tensors="pt").to(DEVICE)
 
 conversion_results = validate_conversion(hf_encoder, tl_encoder, inputs["input_ids"], inputs["attention_mask"])
 print(f"The difference between the final embeddings are less than 0.001: {conversion_results["final_output"] < 0.001}")
+
+prediction_results = test_prediction_equivalence(hf_regressor, tl_regressor, [test_smiles], tokenizer, DEVICE)
+print(f"The predictions are equivalent: {prediction_results["is_equivalent"]}")
+# %% [markdown]
+# Let's run ablation studies to see the effect of misssing components
+
+# %%
+
+
+
+
+
+# %% [markdown]
+# Let's run regression lens to see how the prediction of models changes over time
+
+
+# %% [markdown]
+# TODO: activation patching, see thesis repo
+
+# %%

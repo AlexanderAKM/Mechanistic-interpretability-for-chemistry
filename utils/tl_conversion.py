@@ -238,8 +238,8 @@ class FaithfulTLRegressor(nn.Module):
 
 
 def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemBERTa-77M-MLM", 
-                         device: Optional[str] = None, normalization_pipeline_path: str = None,
-                         target_column: str = None, hyperparams_path: str = None):
+                          device: Optional[str] = None, normalization_pipeline_path: str = None,
+                          hyperparams_path: str = None):
     """Load both HF and faithful TL versions of a ChemBERTa model.
     
     Args:
@@ -247,7 +247,6 @@ def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemB
         tokenizer_name: Name of the tokenizer to use
         device: Device to place models on
         normalization_pipeline_path: Optional path to normalization pipeline pickle file
-        target_column: Name of target column for denormalization
         hyperparams_path: Optional path to hyperparameters JSON file. If None, will try to 
                          find it automatically in the same directory as model_path
         
@@ -288,7 +287,7 @@ def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemB
     # Load original HF model using loaded hyperparameters
     hf_regressor = ChembertaRegressorWithFeatures(
         pretrained=tokenizer_name,
-        num_features=0,
+        num_features=0, # TODO: Very cool mech interp would be with numerical features as well, but for now not possible
         dropout=hyperparams["dropout"],
         hidden_channels=hyperparams["hidden_channels"],
         num_mlp_layers=hyperparams["num_mlp_layers"],
@@ -299,6 +298,11 @@ def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemB
     
     # Create faithful TL version using the extracted encoder
     tl_encoder = create_faithful_tl_model(hf_encoder, device)
+
+    hf_internals = hf_regressor.mlp.model[0]
+    tl_head = torch.nn.Linear(hf_internals.in_features, hf_internals.out_features, bias=True).to(device).eval()
+    tl_head.load_state_dict(hf_internals.state_dict())
+    tl_regressor = FaithfulTLRegressor(tl_encoder, tl_head, dropout_p=hf_regressor.dropout.p).to(device).eval()
     
     # Load tokenizer
     tokenizer = RobertaTokenizerFast.from_pretrained(tokenizer_name)
@@ -311,4 +315,4 @@ def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemB
             normalization_pipeline = pickle.load(f)
         print(f"Loaded normalization pipeline from {normalization_pipeline_path}")
     
-    return hf_encoder, tl_encoder, tokenizer, hf_regressor, normalization_pipeline 
+    return hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, normalization_pipeline 

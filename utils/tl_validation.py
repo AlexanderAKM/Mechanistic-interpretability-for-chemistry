@@ -191,9 +191,9 @@ def run_evaluation_metrics(model_path: str, test_csv: str, tokenizer_name: str,
     }
 
 
-def test_prediction_equivalence(model_path: str, test_molecules: list[str], 
-                               tokenizer_name: str = "DeepChem/ChemBERTa-77M-MLM",
-                               device: Optional[str] = None) -> Dict[str, float]:
+def test_prediction_equivalence(hf_regressor: RobertaModel, tl_regressor: tl.HookedEncoder,
+                                test_molecules: list[str], tokenizer: RobertaTokenizerFast,
+                                device: Optional[str] = None) -> Dict[str, float]:
     """Test prediction equivalence between HF and TL models.
     
     Args:
@@ -206,17 +206,8 @@ def test_prediction_equivalence(model_path: str, test_molecules: list[str],
         Dictionary with prediction differences
     """
     
-    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-    
-    # Load models
-    hf_encoder, tl_encoder, tokenizer, hf_regressor, _ = load_chemberta_models(
-        model_path, tokenizer_name, device
-    )
-    
-    # Create TL regressor
-    tl_head = torch.nn.Linear(384, 1, bias=True).to(device).eval()
-    tl_head.load_state_dict(hf_regressor.mlp.model[0].state_dict())
-    tl_regressor = FaithfulTLRegressor(tl_encoder, tl_head, dropout_p=hf_regressor.dropout.p).to(device).eval()
+    if not device:
+        device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     
     results = {}
     max_diff = 0.0
