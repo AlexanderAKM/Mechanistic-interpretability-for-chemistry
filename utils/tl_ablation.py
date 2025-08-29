@@ -34,6 +34,8 @@ Key functions:
 """
 
 import random
+import types
+import copy
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -65,9 +67,8 @@ def ablate_neurons_by_percentage(
     Returns:
         New model with specified neurons ablated
     """
-    # Create a deep copy to avoid modifying original
-    ablated_model = tl.HookedEncoder(tl_model.cfg).to(tl_model.cfg.device)
-    ablated_model.load_state_dict(tl_model.state_dict())
+    # Deep copy preserves method overrides and exact behavior
+    ablated_model = copy.deepcopy(tl_model).eval()
     
     if layers_to_ablate is None:
         layers_to_ablate = list(range(tl_model.cfg.n_layers))
@@ -114,9 +115,8 @@ def ablate_attention_heads_by_percentage(
     Returns:
         New model with specified attention heads ablated
     """
-    # Create a deep copy to avoid modifying original
-    ablated_model = tl.HookedEncoder(tl_model.cfg).to(tl_model.cfg.device)
-    ablated_model.load_state_dict(tl_model.state_dict())
+    # Deep copy preserves method overrides and exact behavior
+    ablated_model = copy.deepcopy(tl_model).eval()
     
     if layers_to_ablate is None:
         layers_to_ablate = list(range(tl_model.cfg.n_layers))

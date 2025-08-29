@@ -74,8 +74,6 @@ print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
 results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, n_seeds=2)
-
-
 # %% [markdown]
 # We move on to regression lens
 
