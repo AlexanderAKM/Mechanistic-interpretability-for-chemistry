@@ -28,6 +28,7 @@ from pathlib import Path
 import torch
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 import json
 import transformer_lens as tl
 
@@ -65,13 +66,38 @@ prediction_results = test_prediction_equivalence(hf_regressor, tl_regressor, [te
 print(f"The predictions are equivalent: {prediction_results["is_equivalent"]}")
 # %% [markdown]
 # Let's run ablation studies to see the effect of misssing components
+test_data = pd.read_csv(TEST_PATH)
+test_molecules = test_data['smiles'].to_list()
+targets = test_data[TARGET_COLUMN].to_list()
+
+print(f"Testing ablation on {len(test_molecules)} molecules")
+print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
+# %%
+import random
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import torch
+import transformer_lens as tl
+from transformers import RobertaTokenizerFast
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+from utils.tl_conversion import FaithfulTLRegressor
+from utils.tl_ablation import ablate_attention_heads_by_percentage, ablate_neurons_by_percentage
 
 # %%
+ablated = ablate_attention_heads_by_percentage(tl_encoder, 1.0)
+for name, par in ablated.blocks[2].named_parameters():
+    if "attn" in name:
+        print(name, par)
 
-
-
-
-
+ablated = ablate_neurons_by_percentage(ablated, 1.0)
+for name, par in ablated.blocks[1].named_parameters():
+    if "mlp" in name:
+        print(name, par.shape)
 # %% [markdown]
 # Let's run regression lens to see how the prediction of models changes over time
 
