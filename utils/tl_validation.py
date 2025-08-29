@@ -15,7 +15,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 import torch
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from torch.utils.data import DataLoader
 from transformers import RobertaModel, RobertaTokenizerFast
 import transformer_lens as tl
@@ -76,8 +76,8 @@ def validate_conversion(hf_model: RobertaModel, tl_model: tl.HookedEncoder,
     return diffs
 
 
-def run_evaluation_metrics(model_path: str, test_csv: str, tokenizer_name: str,
-                          smiles_col: str = "smiles", target_col: str = "target", 
+def run_evaluation_metrics(model, test_data, tokenizer,
+                          smiles_col: str = "smiles", target_col: str = "measured log solubility in mols per litre", 
                           batch_size: int = 64, device: Optional[str] = None,
                           use_tl_model: bool = False,
                           normalization_pipeline: Optional[Dict] = None,
@@ -85,9 +85,9 @@ def run_evaluation_metrics(model_path: str, test_csv: str, tokenizer_name: str,
     """Run evaluation metrics (RMSE, R²) on test data.
     
     Args:
-        model_path: Path to the trained model
-        test_csv: Path to test CSV file
-        tokenizer_name: Name of the tokenizer
+        model: The trained model (either Huggingface or TL)
+        test_data: Test data
+        tokenizer: Tokenizer
         smiles_col: Name of SMILES column
         target_col: Name of target column
         batch_size: Batch size for evaluation
@@ -101,13 +101,11 @@ def run_evaluation_metrics(model_path: str, test_csv: str, tokenizer_name: str,
     """
     
     device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
-    tokenizer = RobertaTokenizerFast.from_pretrained(tokenizer_name)
     
-    # Load test data
-    df = pd.read_csv(test_csv)
-    texts = df[smiles_col].tolist()
-    labels = df[target_col].astype("float32").values
-    
+    # Load test data smiles and targets
+    texts = test_data[smiles_col].tolist()
+    labels = test_data[target_col].astype("float32").values
+    print("hi")
     # Use training set normalization parameters if available
     if (normalization_pipeline and target_column and 
         'scaler' in normalization_pipeline and 
@@ -136,31 +134,6 @@ def run_evaluation_metrics(model_path: str, test_csv: str, tokenizer_name: str,
     ds = ChembertaDataset(texts, labels_norm, tokenizer, features=None)
     loader = DataLoader(ds, batch_size=batch_size)
     
-    if use_tl_model:
-        # Load TL model
-        hf_encoder, tl_encoder, _, hf_regressor, _ = load_chemberta_models(model_path, tokenizer_name, device)
-        
-        # Create TL regressor
-        tl_head = torch.nn.Linear(384, 1, bias=True).to(device).eval()
-        tl_head.load_state_dict(hf_regressor.mlp.model[0].state_dict())
-        model = FaithfulTLRegressor(tl_encoder, tl_head, dropout_p=hf_regressor.dropout.p).to(device).eval()
-        
-        def predict_fn(input_ids, attention_mask):
-            return model(input_ids, attention_mask)
-    else:
-        # Load HF model
-        model = ChembertaRegressorWithFeatures(
-            pretrained=tokenizer_name,
-            num_features=0,
-            dropout=0.34,
-            hidden_channels=384,
-            num_mlp_layers=1,
-        ).to(device).eval()
-        model.load_state_dict(torch.load(model_path, map_location=device), strict=True)
-        
-        def predict_fn(input_ids, attention_mask):
-            return model(input_ids=input_ids, attention_mask=attention_mask).logits.squeeze(-1)
-    
     # Run evaluation
     preds, lbls = [], []
     with torch.no_grad():
@@ -169,7 +142,10 @@ def run_evaluation_metrics(model_path: str, test_csv: str, tokenizer_name: str,
             attention_mask = batch["attention_mask"].to(device)
             y = batch["labels"].to(device)
             
-            y_hat = predict_fn(ids, attention_mask)
+            y_hat = model(ids, attention_mask)
+            if not use_tl_model:
+                y_hat = y_hat.logits.squeeze(-1)
+
             preds.append(y_hat.cpu())
             lbls.append(y.cpu())
     
@@ -179,15 +155,19 @@ def run_evaluation_metrics(model_path: str, test_csv: str, tokenizer_name: str,
     # Calculate metrics
     rmse_norm = math.sqrt(mean_squared_error(lbls, preds))
     r2_norm = r2_score(lbls, preds)
+    mae_norm = mean_absolute_error(lbls, preds)
     rmse = math.sqrt(mean_squared_error(lbls * std + mean, preds * std + mean))
     r2 = r2_score(lbls * std + mean, preds * std + mean)
-    
+    mae = mean_absolute_error(lbls * std + mean, preds * std + mean)
+
     return {
         "rmse": rmse,
         "r2": r2,
+        "mae": mae,
         "rmse_norm": rmse_norm,
         "r2_norm": r2_norm,
-        "model_type": "TL" if use_tl_model else "HF"
+        "mae_norm": mae_norm,
+        "model_type": "TL" if use_tl_model else "HF",
     }
 
 

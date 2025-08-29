@@ -175,8 +175,8 @@ class FaithfulTLRegressor(nn.Module):
     for ensurance the models behave similarly.
     """
     
-    def __init__(self, faithful_tl_model: tl.HookedEncoder, mlp_head: nn.Module, dropout_p: float,
-                 normalization_pipeline: dict = None, target_column: str = None):
+    def __init__(self, faithful_tl_model: tl.HookedEncoder, mlp_head: nn.Module, dropout_p: float = 0.0,
+                 normalization_pipeline: dict = None, target_column: str = "measured log solubility in mols per litre"):
         super().__init__()
         self.tl_model = faithful_tl_model
         self.mlp_head = mlp_head
