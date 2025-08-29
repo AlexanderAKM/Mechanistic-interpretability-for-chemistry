@@ -34,7 +34,7 @@ import transformer_lens as tl
 
 from utils.tl_conversion import load_chemberta_models
 from utils.tl_validation import validate_conversion, test_prediction_equivalence
-
+from utils.tl_ablation import run_ablation_analysis_with_metrics
 
 # %%
 sns.set_theme(context="notebook", style="whitegrid")
@@ -72,40 +72,13 @@ targets = test_data[TARGET_COLUMN].to_list()
 
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
-# %%
-import random
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import torch
-import transformer_lens as tl
-from transformers import RobertaTokenizerFast
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, n_seeds=2)
 
-from utils.tl_conversion import FaithfulTLRegressor
-from utils.tl_ablation import ablate_attention_heads_by_percentage, ablate_neurons_by_percentage
-from utils.tl_validation import run_evaluation_metrics
-# %%
-# hf_metrics = run_evaluation_metrics(hf_regressor, test_data, tokenizer, use_tl_model=False, normalization_pipeline=normalization_pipeline)
-# tl_metrics = run_evaluation_metrics(tl_regressor, test_data, tokenizer, use_tl_model=True, normalization_pipeline=normalization_pipeline)
-# hf_metrics
+
 # %% [markdown]
-# Let's run regression lens to see how the prediction of models changes over time
+# We move on to regression lens
 
-print(tl_metrics)
-print(hf_metrics)
-
-# %%
-ablated = ablate_attention_heads_by_percentage(tl_encoder, 1.0)
-ablated = ablate_neurons_by_percentage(ablated, 1.0)
-ablated_regressor = FaithfulTLRegressor(ablated, tl_regressor.mlp_head)
-ablated_metrics = run_evaluation_metrics(ablated_regressor, test_data, tokenizer, use_tl_model=True)
-# %%
-normalization_pipeline
-ablated_metrics
 # %% [markdown]
 # TODO: activation patching, see thesis repo
 

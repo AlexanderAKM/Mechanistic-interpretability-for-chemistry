@@ -77,11 +77,10 @@ def validate_conversion(hf_model: RobertaModel, tl_model: tl.HookedEncoder,
 
 
 def run_evaluation_metrics(model, test_data, tokenizer,
-                          smiles_col: str = "smiles", target_col: str = "measured log solubility in mols per litre", 
+                          smiles_column: str = "smiles", target_column: str = "measured log solubility in mols per litre", 
                           batch_size: int = 64, device: Optional[str] = None,
-                          use_tl_model: bool = False,
-                          normalization_pipeline: Optional[Dict] = None,
-                          target_column: Optional[str] = None) -> Dict[str, float]:
+                          use_tl_model: bool = True,
+                          normalization_pipeline: Optional[Dict] = None) -> Dict[str, float]:
     """Run evaluation metrics (RMSE, R²) on test data.
     
     Args:
@@ -103,9 +102,9 @@ def run_evaluation_metrics(model, test_data, tokenizer,
     device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     
     # Load test data smiles and targets
-    texts = test_data[smiles_col].tolist()
-    labels = test_data[target_col].astype("float32").values
-    print("hi")
+    texts = test_data[smiles_column].tolist()
+    labels = test_data[target_column].astype("float32").values
+
     # Use training set normalization parameters if available
     if (normalization_pipeline and target_column and 
         'scaler' in normalization_pipeline and 
@@ -153,17 +152,21 @@ def run_evaluation_metrics(model, test_data, tokenizer,
     lbls = torch.cat(lbls).numpy()
     
     # Calculate metrics
-    rmse_norm = math.sqrt(mean_squared_error(lbls, preds))
+    mse_norm = mean_squared_error(lbls, preds)
+    rmse_norm = math.sqrt(mse_norm)
     r2_norm = r2_score(lbls, preds)
     mae_norm = mean_absolute_error(lbls, preds)
-    rmse = math.sqrt(mean_squared_error(lbls * std + mean, preds * std + mean))
+    mse = mean_squared_error(lbls * std + mean, preds * std + mean)
+    rmse = math.sqrt(mse)
     r2 = r2_score(lbls * std + mean, preds * std + mean)
     mae = mean_absolute_error(lbls * std + mean, preds * std + mean)
 
     return {
+        "mse": mse,
         "rmse": rmse,
         "r2": r2,
         "mae": mae,
+        "mse_norm": mse_norm,
         "rmse_norm": rmse_norm,
         "r2_norm": r2_norm,
         "mae_norm": mae_norm,
