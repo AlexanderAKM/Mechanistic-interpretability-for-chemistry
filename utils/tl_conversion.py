@@ -13,6 +13,7 @@ from __future__ import annotations
 import types
 import torch
 from torch import nn
+import pandas as pd
 from transformers import RobertaModel, RobertaTokenizerFast
 from pathlib import Path
 
@@ -176,7 +177,8 @@ class FaithfulTLRegressor(nn.Module):
     """
     
     def __init__(self, faithful_tl_model: tl.HookedEncoder, mlp_head: nn.Module, dropout_p: float = 0.0,
-                 normalization_pipeline: dict = None, target_column: str = "measured log solubility in mols per litre"):
+                 normalization_pipeline: dict = None, target_column: str = "measured log solubility in mols per litre",
+                 train_data: pd.DataFrame = None):
         super().__init__()
         self.tl_model = faithful_tl_model
         self.mlp_head = mlp_head
@@ -185,6 +187,10 @@ class FaithfulTLRegressor(nn.Module):
         # Store normalization pipeline for denormalizing predictions
         self.normalization_pipeline = normalization_pipeline
         self.target_column = target_column
+
+        # Bit clunky but to denormalize predictions easily
+        self.train_mean = train_data[target_column].mean()
+        self.train_std = train_data[target_column].std()
     
     def forward(self, input_ids, attention_mask=None, denormalize: bool = False):
         """Forward pass that matches HF model exactly.
@@ -239,7 +245,7 @@ class FaithfulTLRegressor(nn.Module):
 
 def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemBERTa-77M-MLM", 
                           device: Optional[str] = None, normalization_pipeline_path: str = None,
-                          hyperparams_path: str = None):
+                          hyperparams_path: str = None, train_data: pd.DataFrame = None):
     """Load both HF and faithful TL versions of a ChemBERTa model.
     
     Args:
@@ -302,7 +308,7 @@ def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemB
     hf_internals = hf_regressor.mlp.model[0]
     tl_head = torch.nn.Linear(hf_internals.in_features, hf_internals.out_features, bias=True).to(device).eval()
     tl_head.load_state_dict(hf_internals.state_dict())
-    tl_regressor = FaithfulTLRegressor(tl_encoder, tl_head, dropout_p=hf_regressor.dropout.p).to(device).eval()
+    tl_regressor = FaithfulTLRegressor(tl_encoder, tl_head, dropout_p=hf_regressor.dropout.p, train_data=train_data).to(device).eval()
     
     # Load tokenizer
     tokenizer = RobertaTokenizerFast.from_pretrained(tokenizer_name)

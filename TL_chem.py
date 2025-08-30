@@ -35,12 +35,14 @@ import transformer_lens as tl
 from utils.tl_conversion import load_chemberta_models
 from utils.tl_validation import validate_conversion, test_prediction_equivalence
 from utils.tl_ablation import run_ablation_analysis_with_metrics
+from utils.tl_regression import run_regression_lens, plot_individual_molecules_regression_lens
 
 # %%
 sns.set_theme(context="notebook", style="whitegrid")
 
 MODEL_PATH = "trained_models/ESOL/chemberta/chemberta_model_final.bin"
 TEST_PATH = "data/test_ESOL.csv"
+TRAIN_PATH = "data/train_ESOL.csv"
 TOKENIZER_NAME = "DeepChem/ChemBERTa-77M-MLM"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -48,8 +50,9 @@ NORMALIZATION_PIPELINE_PATH = "trained_models/ESOL/chemberta/normalization_pipel
 TARGET_COLUMN = "measured log solubility in mols per litre"
 print(DEVICE)
 # %%
+train_data = pd.read_csv(TRAIN_PATH)
 hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, normalization_pipeline = load_chemberta_models(
-    MODEL_PATH, TOKENIZER_NAME, DEVICE, NORMALIZATION_PIPELINE_PATH
+    MODEL_PATH, TOKENIZER_NAME, DEVICE, NORMALIZATION_PIPELINE_PATH, train_data=train_data
 )
 print(hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, normalization_pipeline)
 # %% [markdown]
@@ -73,11 +76,29 @@ targets = test_data[TARGET_COLUMN].to_list()
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
-results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, n_seeds=2)
+#results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, n_seeds=2)
 # %% [markdown]
 # We move on to regression lens
+# We pick the molecules with the largest and smallest target value to showcase the technique
+# on the training data
+min_max_molecules = [train_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0], train_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0]]
+
+results = run_regression_lens(tl_encoder, tl_regressor, min_max_molecules, tokenizer)
+results
+plot_individual_molecules_regression_lens(results)
+
+# %% [markdown]
+# Now we do regression lens on groups of molecules
+molecule_groups = {
+    "Simple Alcohols": ["CCO", "CC(C)O", "CCCO"],
+    "Aromatic": ["c1ccccc1", "c1ccc(C)cc1", "c1ccc(O)cc1"],  
+    "Carboxylic Acids": ["CC(=O)O", "CCC(=O)O", "c1ccc(C(=O)O)cc1"],
+    "Alkanes": ["CC", "CCC", "CCCCCCCCCC"]
+}
+
 
 # %% [markdown]
 # TODO: activation patching, see thesis repo
 
+# %%
 # %%
