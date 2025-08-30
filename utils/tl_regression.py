@@ -87,30 +87,39 @@ def run_regression_lens(
     
     return results
 
-# def compare_molecule_groups_regression_lens(
-#         tl_model: tl.HookedEncoder,
-#         regressor: FaithfulTLRegressor,
-#         smiles: Dict,
-#         tokenizer: RobertaTokenizerFast,
-#         device: Optional[str] = None,
-# ) -> Dict:
-#     """Run regression lens analysis for one or more molecule groups.
+def compare_molecule_groups_regression_lens(
+        tl_model: tl.HookedEncoder,
+        regressor: FaithfulTLRegressor,
+        group_smiles: Dict,
+        tokenizer: RobertaTokenizerFast,
+        device: Optional[str] = None,
+) -> Dict:
+    """Run regression lens analysis for one or more molecule groups.
     
-#     Applies the readout layer after each transformer block to see what
-#     the model would predict based on representations at each layer.
+    Applies the readout layer after each transformer block to see what
+    the model would predict based on representations at each layer.
     
-#     Args:
-#         tl_model: TransformerLens encoder model
-#         regressor: Full regressor with MLP head for readout
-#         smiles: SMILES string of molecule to analyze
-#         tokenizer: Tokenizer for the model
-#         device: Device to use for computation
+    Args:
+        tl_model: TransformerLens encoder model
+        regressor: Full regressor with MLP head for readout
+        smiles: SMILES string of molecule to analyze
+        tokenizer: Tokenizer for the model
+        device: Device to use for computation
         
-#     Returns:
-#         Dictionary with layer-wise predictions for each molecule
-#     """
+    Returns:
+        Dictionary with layer-wise predictions for each molecule
+    """
+    results = {}
 
-#     for group in smiles:
+    for group, smiles in group_smiles:
+        results[group] = run_regression_lens(smiles)
+    
+        # Calculate mean and std per group after each layer
+        results[group]["mean"] = {}
+
+
+
+
 
 
 def plot_individual_molecules_regression_lens(

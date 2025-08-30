@@ -95,7 +95,21 @@ molecule_groups = {
     "Carboxylic Acids": ["CC(=O)O", "CCC(=O)O", "c1ccc(C(=O)O)cc1"],
     "Alkanes": ["CC", "CCC", "CCCCCCCCCC"]
 }
+results = {}
 
+for group, smiles in molecule_groups.items():
+    results[group] = run_regression_lens(tl_encoder, tl_regressor, smiles, tokenizer)
+
+    results[group]["mean"] = {}
+    results[group]["std"] = {}
+
+    values_layer = []
+    for key, value in results[group][sm]
+    break
+
+
+
+results
 
 # %% [markdown]
 # TODO: activation patching, see thesis repo
