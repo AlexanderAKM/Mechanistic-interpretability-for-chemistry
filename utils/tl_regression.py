@@ -111,15 +111,24 @@ def compare_molecule_groups_regression_lens(
     """
     results = {}
 
-    for group, smiles in group_smiles:
-        results[group] = run_regression_lens(smiles)
+    for group, smiles in group_smiles.items():
+        group_results = run_regression_lens(tl_model, regressor, smiles, tokenizer)
+        results[group] = group_results
+
+        # Compute per-layer mean and std across all molecules in the group
+        layer_names = list(next(iter(group_results.values())).keys())
+        means = {}
+        variances = {}
+
+        for layer in layer_names:
+            values = np.array([group_results[smile][layer] for smile in smiles], dtype=np.float64)
+            means[layer] = np.mean(values)
+            variances[layer] = np.var(values)
+
+        results[group]["mean"] = means
+        results[group]["variance"] = variances
     
-        # Calculate mean and std per group after each layer
-        results[group]["mean"] = {}
-
-
-
-
+    return results
 
 
 def plot_individual_molecules_regression_lens(
@@ -141,4 +150,47 @@ def plot_individual_molecules_regression_lens(
     plt.legend(loc='upper left', fontsize=16)
     plt.tight_layout()
     plt.savefig(Path(results_dir) / "individual_molecules.pdf", dpi=300, bbox_inches="tight")
+    plt.close()
+
+
+def plot_group_molecules_regression_lens(
+        results: dict,
+        results_dir: str = "results/regression_lens",
+):
+    os.makedirs(results_dir, exist_ok=True)
+
+    # Determine layer order from the first group's mean dict
+    first_group = next(iter(results.values()))
+    layer_names = list(first_group["mean"].keys())
+
+    # Plot group means
+    plt.figure(figsize=(12, 8))
+    for group_name, group_data in results.items():
+        mean_values = [group_data["mean"][layer] for layer in layer_names]
+        plt.plot(range(len(layer_names)), mean_values, 'o-', alpha=0.8, label=group_name)
+
+    plt.xlabel('Block', fontsize=16)
+    plt.ylabel("Mean Prediction", fontsize=16)
+    plt.xticks(range(len(layer_names)), layer_names, rotation=45, fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.grid(True, alpha=0.3)
+    plt.legend(loc='upper left', fontsize=12)
+    plt.tight_layout()
+    plt.savefig(Path(results_dir) / "group_means.pdf", dpi=300, bbox_inches="tight")
+    plt.close()
+
+    # Plot group standard deviations
+    plt.figure(figsize=(12, 8))
+    for group_name, group_data in results.items():
+        std_values = [group_data["variance"][layer] for layer in layer_names]
+        plt.plot(range(len(layer_names)), std_values, 'o-', alpha=0.8, label=group_name)
+
+    plt.xlabel('Block', fontsize=16)
+    plt.ylabel("Prediction Variance", fontsize=16)
+    plt.xticks(range(len(layer_names)), layer_names, rotation=45, fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.grid(True, alpha=0.3)
+    plt.legend(loc='upper left', fontsize=12)
+    plt.tight_layout()
+    plt.savefig(Path(results_dir) / "group_stds.pdf", dpi=300, bbox_inches="tight")
     plt.close()

@@ -29,6 +29,7 @@ import torch
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import numpy as np
 import json
 import transformer_lens as tl
 
@@ -36,6 +37,7 @@ from utils.tl_conversion import load_chemberta_models
 from utils.tl_validation import validate_conversion, test_prediction_equivalence
 from utils.tl_ablation import run_ablation_analysis_with_metrics
 from utils.tl_regression import run_regression_lens, plot_individual_molecules_regression_lens
+from utils.tl_regression import compare_molecule_groups_regression_lens, plot_group_molecules_regression_lens
 
 # %%
 sns.set_theme(context="notebook", style="whitegrid")
@@ -95,24 +97,13 @@ molecule_groups = {
     "Carboxylic Acids": ["CC(=O)O", "CCC(=O)O", "c1ccc(C(=O)O)cc1"],
     "Alkanes": ["CC", "CCC", "CCCCCCCCCC"]
 }
-results = {}
 
-for group, smiles in molecule_groups.items():
-    results[group] = run_regression_lens(tl_encoder, tl_regressor, smiles, tokenizer)
-
-    results[group]["mean"] = {}
-    results[group]["std"] = {}
-
-    values_layer = []
-    for key, value in results[group][sm]
-    break
-
-
-
-results
+group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, molecule_groups, tokenizer, DEVICE)
+plot_group_molecules_regression_lens(group_results)
 
 # %% [markdown]
 # TODO: activation patching, see thesis repo
 
 # %%
+
 # %%
