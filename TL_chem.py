@@ -101,9 +101,54 @@ molecule_groups = {
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, molecule_groups, tokenizer, DEVICE)
 plot_group_molecules_regression_lens(group_results)
 
+
+
+# %% [markdown]
+
 # %% [markdown]
 # TODO: activation patching, see thesis repo
 
-# %%
+
+
+
+
+
+
+
+
+
 
 # %%
+# %%
+# import deepchem as dc
+# from deepchem.molnet import load_clintox, load_tox21, load_qm8
+# from rdkit import Chem
+
+# tox21_data_dir = os.path.join("data", "deepchem_datasets")
+# os.makedirs(tox21_data_dir, exist_ok=True)
+
+# # Wrap the featurizer to avoid NumPy ragged-array errors by returning a list
+# # and inserting empty arrays for invalid molecules (so CSVLoader can filter).
+# class SafeCircularFingerprint(dc.feat.CircularFingerprint):
+#     def featurize(self, smiles_iter, log_every_n=1000):
+#         features = []
+#         for datapoint in smiles_iter:
+#             try:
+#                 mol = None
+#                 if isinstance(datapoint, str):
+#                     mol = Chem.MolFromSmiles(datapoint)
+#                 elif hasattr(datapoint, 'GetNumAtoms'):
+#                     mol = datapoint
+#                 if mol is None:
+#                     features.append(np.array([]))
+#                     continue
+#                 fp = super()._featurize(mol)
+#                 arr = fp if isinstance(fp, np.ndarray) else np.asarray(fp)
+#                 features.append(arr)
+#             except Exception:
+#                 features.append(np.array([]))
+#         return features
+
+
+# featurizer = SafeCircularFingerprint(size=1024)
+# dataset = load_clintox(featurizer=featurizer, data_dir=tox21_data_dir, reload=True)
