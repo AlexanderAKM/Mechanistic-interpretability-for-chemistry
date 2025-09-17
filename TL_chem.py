@@ -32,13 +32,16 @@ import pandas as pd
 import numpy as np
 import json
 import transformer_lens as tl
+from sklearn.model_selection import train_test_split
+import argparse
 
 from utils.tl_conversion import load_chemberta_models
 from utils.tl_validation import validate_conversion, test_prediction_equivalence
 from utils.tl_ablation import run_ablation_analysis_with_metrics
 from utils.tl_regression import run_regression_lens, plot_individual_molecules_regression_lens
 from utils.tl_regression import compare_molecule_groups_regression_lens, plot_group_molecules_regression_lens
-
+from utils.chemberta_workflows import train_chemberta_model
+from utils.normalizing import normalize_csv, inverse_transform
 # %%
 sns.set_theme(context="notebook", style="whitegrid")
 
@@ -110,12 +113,39 @@ molecule_groups = {
 # Same for hce although there's a spike at 0, should be fine I think
 
 # %%
-# Let's quickly inspect
-hce = pd.read_csv("data/hce.csv").sample(1000, random_state=9237482)
-hce = hce.drop(columns=["pce_pcbm_sas", "pce_pcdtbt_sas", "pce_2", "sas"]).reset_index(drop=True)
+RANDOM_SEED = 19237
+hce = pd.read_csv("data/hce_filtered.csv")
+train_hce, test_hce = train_test_split(hce, test_size=0.2, random_state=RANDOM_SEED)
+train_hce, test_hce
+# %%
+# Make an args parser
+defaults = {
+    'train_csv': 'data/train_ESOL.csv',
+    'test_csv': 'data/test_ESOL.csv',
+    'target_column': 'measured log solubility in mols per litre',
+    'smiles_column': 'smiles',
+    'output_dir': 'trained_models',
+    'epochs': 10,
+    'batch_size': 16,
+    'lr': 2e-5,
+    'l1_lambda': 0.0,
+    'l2_lambda': 0.01,
+    'dropout': 0.3,
+    'hidden_channels': 100,
+    'num_mlp_layers': 1,
+    'random_seed': 42,
+    'early_stopping': False,
+    'patience': 5
+}
+
+parser = argparse.Namespace(**defaults)
 
 # %%
-hce.to_csv("data/hce_filtered.csv")
+norm_train_hce, scaler = normalize_csv(train_hce, target_col="pce_1")
+norm_test_hce, _ = normalize_csv(test_hce, target_col="pce_1", scaler=scaler)
+results = train_chemberta_model(defaults, train_hce, test_hce, scaler, device=DEVICE)
+results
+
 # %% [markdown]
 # Now we'll be doing the same for 
 # %% [markdown]
