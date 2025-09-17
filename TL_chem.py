@@ -83,11 +83,11 @@ print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique
 # on the training data
-min_max_molecules = [train_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0], train_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0]]
+# min_max_molecules = [train_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0], train_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0]]
 
-results = run_regression_lens(tl_encoder, tl_regressor, min_max_molecules, tokenizer)
-results
-plot_individual_molecules_regression_lens(results)
+# results = run_regression_lens(tl_encoder, tl_regressor, min_max_molecules, tokenizer)
+# results
+#plot_individual_molecules_regression_lens(results)
 
 # %% [markdown]
 # Now we do regression lens on groups of molecules
@@ -98,13 +98,26 @@ molecule_groups = {
     "Alkanes": ["CC", "CCC", "CCCCCCCCCC"]
 }
 
-group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, molecule_groups, tokenizer, DEVICE)
-plot_group_molecules_regression_lens(group_results)
+#group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, molecule_groups, tokenizer, DEVICE)
+#plot_group_molecules_regression_lens(group_results)
 
 
 
+# %% [markdown] 
+# Now we try to explore the above techniques on two other datasets. We'll first try this on the HCE dataset:
+# https://github.com/aspuru-guzik-group/Tartarus/blob/main/datasets/hce.csv we'll be predicting pce_1
+# We'll also do it on the qm9 dataset which is nicely normally distributed. 
+# Same for hce although there's a spike at 0, should be fine I think
+
+# %%
+# Let's quickly inspect
+hce = pd.read_csv("data/hce.csv").sample(1000, random_state=9237482)
+hce = hce.drop(columns=["pce_pcbm_sas", "pce_pcdtbt_sas", "pce_2", "sas"]).reset_index(drop=True)
+
+# %%
+hce.to_csv("data/hce_filtered.csv")
 # %% [markdown]
-
+# Now we'll be doing the same for 
 # %% [markdown]
 # TODO: activation patching, see thesis repo
 
