@@ -338,12 +338,9 @@ def train_chemberta_model(
     # Save normalization scaler for later use in interpretability analysis
     if scaler is not None:
         scaler_path = os.path.join(output_dir, "normalization_scaler.pkl")
-        # Add target column to scaler for easier reference
-        scaler_to_save = scaler.copy()
-        scaler_to_save["target_column"] = target_col
         
         with open(scaler_path, "wb") as f:
-            pickle.dump(scaler_to_save, f)
+            pickle.dump(scaler, f)
         print(f"Normalization scaler saved to {scaler_path}")
 
     # Return results
