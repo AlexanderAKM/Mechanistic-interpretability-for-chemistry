@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 def plot_predictions_vs_targets(
     predictions,
@@ -69,8 +70,6 @@ def plot_predictions_vs_targets(
     # Labels and title for main plot
     ax_scatter.set_xlabel("True Values", fontsize=12)
     ax_scatter.set_ylabel("Predictions", fontsize=12)
-    if title is not None:
-        ax_scatter.set_title(title, fontsize=13, pad=15)
     ax_scatter.grid(True, alpha=0.3)
     ax_scatter.legend(fontsize=9)
     

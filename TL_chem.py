@@ -127,17 +127,15 @@ defaults = {
     'target_column': 'measured log solubility in mols per litre',
     'smiles_column': 'smiles',
     'output_dir': 'trained_models',
-    'epochs': 10,
+    'epochs': 20,
     'batch_size': 16,
-    'lr': 2e-5,
-    'l1_lambda': 0.0,
-    'l2_lambda': 0.01,
-    'dropout': 0.3,
-    'hidden_channels': 100,
+    'lr': 0.0008045,
+    'l1_lambda': 2.596e-05,
+    'l2_lambda': 5e-05,
+    'dropout': 0.3408,
+    'hidden_channels': 87,
     'num_mlp_layers': 1,
-    'random_seed': 42,
-    'early_stopping': False,
-    'patience': 5
+    'random_seed': RANDOM_SEED,
 }
 
 parser = argparse.Namespace(**defaults)
