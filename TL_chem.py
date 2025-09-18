@@ -114,9 +114,11 @@ molecule_groups = {
 
 # %%
 RANDOM_SEED = 19237
-hce = pd.read_csv("data/hce_filtered.csv")
-train_hce, test_hce = train_test_split(hce, test_size=0.2, random_state=RANDOM_SEED)
-train_hce, test_hce
+# hce = pd.read_csv("data/hce_filtered.csv")
+# train_hce, test_hce = train_test_split(hce, test_size=0.2, random_state=RANDOM_SEED)
+# train_hce, test_hce
+
+
 # %%
 # Make an args parser
 defaults = {
@@ -141,11 +143,20 @@ defaults = {
 parser = argparse.Namespace(**defaults)
 
 # %%
-norm_train_hce, scaler = normalize_csv(train_hce, target_col="pce_1")
-norm_test_hce, _ = normalize_csv(test_hce, target_col="pce_1", scaler=scaler)
-results = train_chemberta_model(defaults, train_hce, test_hce, scaler, device=DEVICE)
-results
+# norm_train_hce, scaler = normalize_csv(train_hce, target_col="pce_1")
+# norm_test_hce, _ = normalize_csv(test_hce, target_col="pce_1", scaler=scaler)
+# results = train_chemberta_model(parser, train_hce, test_hce, scaler, device=DEVICE)
+# results
 
+# %%
+train_esol = pd.read_csv("data/train_ESOL.csv")
+test_esol = pd.read_csv("data/test_ESOL.csv")
+norm_train_esol, scaler = normalize_csv(train_esol, target_col=parser.target_column)
+norm_test_esol, _ = normalize_csv(test_esol, target_col=parser.target_column)
+
+# %%
+esol_results = train_chemberta_model(parser, norm_train_esol, norm_test_esol, scaler)
+esol_results
 # %% [markdown]
 # Now we'll be doing the same for 
 # %% [markdown]

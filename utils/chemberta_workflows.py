@@ -151,12 +151,11 @@ class ChembertaDataset(Dataset):
         return item
 
 
-def get_compute_metrics_fn(verbose_level, scaler, target_column):
+def get_compute_metrics_fn(scaler, target_column):
     """
     Returns a function that computes evaluation metrics based on model predictions.
 
     Args:
-        verbose_level: Level of verbosity for logging
         scaler: Preprocessing scaler for inverse transforms
         target_column: Name of the target column
 

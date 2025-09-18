@@ -8,13 +8,18 @@ def normalize_csv(
     scaler: StandardScaler = None,
     fit_scaler: bool = True,
 ):
+    # Make a copy to avoid modifying the original dataframe
+    df_copy = df.copy()
+    
     if fit_scaler:
         scaler = StandardScaler()
-        scaler.fit(df[target_col])
+        # Reshape to 2D array for sklearn
+        scaler.fit(df_copy[target_col].values.reshape(-1, 1))
     
-    df[target_col] = df[target_col].astype(np.float64)
-    df.loc[:, target_col] = scaler.transform(df.loc[:, target_col])
-    return df, scaler
+    df_copy[target_col] = df_copy[target_col].astype(np.float64)
+    # Transform also needs 2D array
+    df_copy.loc[:, target_col] = scaler.transform(df_copy[target_col].values.reshape(-1, 1)).flatten()
+    return df_copy, scaler
 
 def inverse_transform(
     y, 
