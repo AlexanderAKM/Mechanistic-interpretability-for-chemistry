@@ -11,7 +11,7 @@ def normalize_csv(
     # Make a copy to avoid modifying the original dataframe
     df_copy = df.copy()
     
-    if fit_scaler:
+    if fit_scaler and not scaler:
         scaler = StandardScaler()
         # Reshape to 2D array for sklearn
         scaler.fit(df_copy[target_col].values.reshape(-1, 1))

@@ -203,7 +203,7 @@ qm9_parser = argparse.Namespace(**qm9_defaults)
 train_qm9 = pd.read_csv("data/train_qm9.csv")
 test_qm9 = pd.read_csv('data/test_qm9.csv')
 norm_train_qm9, scaler = normalize_csv(train_qm9, target_col="g298_atom")
-norm_test_qm9, _ = normalize_csv(test_qm9, target_col="g298_atom", scaler = scaler)
+norm_test_qm9, _ = normalize_csv(test_qm9, target_col="g298_atom", scaler=scaler)
 qm9_results = train_chemberta_model(qm9_parser, norm_train_qm9, norm_test_qm9, scaler)
 qm9_results
 # %%

@@ -343,8 +343,7 @@ def train_chemberta_model(
             pickle.dump(scaler, f)
         print(f"Normalization scaler saved to {scaler_path}")
 
-    # Return results
-    return {
+    complete_results = {
         "model": model,
         "trainer": trainer,
         "metrics": metrics,
@@ -355,5 +354,21 @@ def train_chemberta_model(
         "output_dir": output_dir,
         "hyperparams": hyperparams,
     }
+
+    json_serializable_results = {
+        "metrics": metrics,
+        "predictions": orig_preds.tolist() if hasattr(orig_preds, 'tolist') else list(orig_preds),
+        "targets": orig_labels.tolist() if hasattr(orig_labels, 'tolist') else list(orig_labels),
+        "history": trainer.state.log_history,
+        "training_time": training_time,
+        "output_dir": output_dir,
+        "hyperparams": hyperparams,
+    }
+
+    complete_results_path = os.path.join(output_dir, "all_results.json")
+    with open(complete_results_path, "w") as f:
+        json.dump(json_serializable_results, f, indent=2)
+        
+    return complete_results
 
 
