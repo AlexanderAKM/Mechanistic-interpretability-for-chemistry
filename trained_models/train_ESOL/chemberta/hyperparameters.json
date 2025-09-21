@@ -6,5 +6,5 @@
   "batch_size": 16,
   "dropout": 0.3408,
   "num_mlp_layers": 1,
-  "epochs": 1
+  "epochs": 20
 }

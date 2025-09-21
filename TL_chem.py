@@ -122,7 +122,7 @@ esol_defaults = {
     'target_column': 'measured log solubility in mols per litre',
     'smiles_column': 'smiles',
     'output_dir': 'trained_models',
-    'epochs': 1,
+    'epochs': 20,
     'batch_size': 16,
     'lr': 0.0008045,
     'l1_lambda': 2.596e-05,
@@ -145,11 +145,10 @@ norm_train_esol, scaler = normalize_csv(train_esol, target_col=esol_parser.targe
 norm_test_esol, _ = normalize_csv(test_esol, target_col=esol_parser.target_column)
 
 # %%
-esol_results = train_chemberta_model(esol_parser, norm_train_esol, norm_test_esol, scaler)
-esol_results
+#esol_results = train_chemberta_model(esol_parser, norm_train_esol, norm_test_esol, scaler)
+#esol_results
 
 # %%
-esol_results
 
 # %%
 hce_defaults = {
@@ -176,8 +175,8 @@ train_hce = pd.read_csv("data/train_hce.csv")
 test_hce = pd.read_csv("data/test_hce.csv")
 norm_train_hce, scaler = normalize_csv(train_hce, target_col="pce_1")
 norm_test_hce, _ = normalize_csv(test_hce, target_col="pce_1", scaler=scaler)
-hce_results = train_chemberta_model(hce_parser, train_hce, test_hce, scaler, device=DEVICE)
-hce_results
+#hce_results = train_chemberta_model(hce_parser, train_hce, test_hce, scaler, device=DEVICE)
+#hce_results
 
 # %% [markdown]
 # Now we'll be doing the same for qm9
@@ -204,53 +203,59 @@ train_qm9 = pd.read_csv("data/train_qm9.csv")
 test_qm9 = pd.read_csv('data/test_qm9.csv')
 norm_train_qm9, scaler = normalize_csv(train_qm9, target_col="g298_atom")
 norm_test_qm9, _ = normalize_csv(test_qm9, target_col="g298_atom", scaler=scaler)
-qm9_results = train_chemberta_model(qm9_parser, norm_train_qm9, norm_test_qm9, scaler)
-qm9_results
+#qm9_results = train_chemberta_model(qm9_parser, norm_train_qm9, norm_test_qm9, scaler)
+#qm9_results
 # %%
-# %% [markdown]
+
+
+
+
+# %%
+import numpy as np
+import pandas as pd
+import rdkit.Chem as rdc
+import rdkit.DataStructs as rdd
+import rdkit.Chem.AllChem as rdca
+import rdkit.Chem.Draw as rdcd
+import sklearn.decomposition as skd
+import sklearn.cluster as skc
+import sklearn.metrics as skm
+import matplotlib.pyplot as plt
+
+# %%
+database = pd.read_csv("data/test_ESOL.csv")
+
+fingerprint_generator = rdca.GetRDKitFPGenerator(fpSize=2048)
+
+data = database
+fingerprints = [fingerprint_generator.GetFingerprint(rdc.MolFromSmiles(si)) for si in list(data["smiles"].values)]
+number_of_molecules = len(fingerprints)
+similarities = np.zeros((number_of_molecules, number_of_molecules))
+
+for ri in range(number_of_molecules):
+    similarities[ri, :] = rdd.BulkTanimotoSimilarity(fingerprints[ri], fingerprints)
+
+plt.imshow(similarities)
+similarities.shape
+
+# %%
+pca = skd.PCA(number_of_molecules)
+pca.fit(similarities)
+
+# Only take ones that explain 80% of total variance
+total_variance_explained = 0.80
+number_of_components = len([np.sum(pca.explained_variance_ratio_[:ni]) for ni in range(number_of_molecules) if np.sum(pca.explained_variance_ratio_[:ni]) < total_variance_explained])
+pca = skd.PCA(number_of_components)
+transformed_similarities = pca.fit_transform(similarities)
+
+
+
+# %%
+
+
+
+
+
+
+# %%
 # TODO: activation patching, see thesis repo
-
-
-
-
-
-
-
-
-
-
-
-# %%
-# %%
-# import deepchem as dc
-# from deepchem.molnet import load_clintox, load_tox21, load_qm8
-# from rdkit import Chem
-
-# tox21_data_dir = os.path.join("data", "deepchem_datasets")
-# os.makedirs(tox21_data_dir, exist_ok=True)
-
-# # Wrap the featurizer to avoid NumPy ragged-array errors by returning a list
-# # and inserting empty arrays for invalid molecules (so CSVLoader can filter).
-# class SafeCircularFingerprint(dc.feat.CircularFingerprint):
-#     def featurize(self, smiles_iter, log_every_n=1000):
-#         features = []
-#         for datapoint in smiles_iter:
-#             try:
-#                 mol = None
-#                 if isinstance(datapoint, str):
-#                     mol = Chem.MolFromSmiles(datapoint)
-#                 elif hasattr(datapoint, 'GetNumAtoms'):
-#                     mol = datapoint
-#                 if mol is None:
-#                     features.append(np.array([]))
-#                     continue
-#                 fp = super()._featurize(mol)
-#                 arr = fp if isinstance(fp, np.ndarray) else np.asarray(fp)
-#                 features.append(arr)
-#             except Exception:
-#                 features.append(np.array([]))
-#         return features
-
-
-# featurizer = SafeCircularFingerprint(size=1024)
-# dataset = load_clintox(featurizer=featurizer, data_dir=tox21_data_dir, reload=True)
