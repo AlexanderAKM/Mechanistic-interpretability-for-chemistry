@@ -177,20 +177,15 @@ class FaithfulTLRegressor(nn.Module):
     """
     
     def __init__(self, faithful_tl_model: tl.HookedEncoder, mlp_head: nn.Module, dropout_p: float = 0.0,
-                 normalization_pipeline: dict = None, target_column: str = "measured log solubility in mols per litre",
+                 scaler = None, target_column: str = "measured log solubility in mols per litre",
                  train_data: pd.DataFrame = None):
         super().__init__()
         self.tl_model = faithful_tl_model
         self.mlp_head = mlp_head
         self.dropout = nn.Dropout(dropout_p)
         
-        # Store normalization pipeline for denormalizing predictions
-        self.normalization_pipeline = normalization_pipeline
+        self.scaler = scaler
         self.target_column = target_column
-
-        # Bit clunky but to denormalize predictions easily
-        self.train_mean = train_data[target_column].mean()
-        self.train_std = train_data[target_column].std()
     
     def forward(self, input_ids, attention_mask=None, denormalize: bool = False):
         """Forward pass that matches HF model exactly.
@@ -198,7 +193,7 @@ class FaithfulTLRegressor(nn.Module):
         Args:
             input_ids: Tokenized input
             attention_mask: Attention mask
-            denormalize: If True and normalization_pipeline is available, 
+            denormalize: If True and scaler is available, 
                         denormalize predictions to original scale
                         
         Returns:
@@ -208,7 +203,7 @@ class FaithfulTLRegressor(nn.Module):
         cls_token = hidden[:, 0, :]  # Extract CLS token
         predictions = self.mlp_head(self.dropout(cls_token)).squeeze(-1)
         
-        if denormalize and self.normalization_pipeline and self.target_column:
+        if denormalize and self.scaler and self.target_column:
             predictions = self.denormalize_predictions(predictions)
             
         return predictions
@@ -222,7 +217,7 @@ class FaithfulTLRegressor(nn.Module):
         Returns:
             Tensor of predictions in original scale
         """
-        if not self.normalization_pipeline or not self.target_column:
+        if not self.scaler or not self.target_column:
             return predictions
                     
         # Convert to numpy for inverse transform
@@ -244,7 +239,7 @@ class FaithfulTLRegressor(nn.Module):
 
 
 def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemBERTa-77M-MLM", 
-                          device: Optional[str] = None, normalization_pipeline_path: str = None,
+                          device: Optional[str] = None, scaler_path: str = None,
                           hyperparams_path: str = None, train_data: pd.DataFrame = None):
     """Load both HF and faithful TL versions of a ChemBERTa model.
     
@@ -252,12 +247,12 @@ def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemB
         model_path: Path to the finetuned ChemBERTa model
         tokenizer_name: Name of the tokenizer to use
         device: Device to place models on
-        normalization_pipeline_path: Optional path to normalization pipeline pickle file
+        scaler_path: Optional path to scaler pickle file
         hyperparams_path: Optional path to hyperparameters JSON file. If None, will try to 
                          find it automatically in the same directory as model_path
         
     Returns:
-        Tuple of (hf_encoder, tl_encoder, tokenizer, hf_regressor, normalization_pipeline)
+        Tuple of (hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler)
     """
     
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -302,23 +297,24 @@ def load_chemberta_models(model_path: str, tokenizer_name: str = "DeepChem/ChemB
     hf_regressor.load_state_dict(torch.load(model_path, map_location=device), strict=True)
     hf_encoder = hf_regressor.roberta  # Extract the RoBERTa encoder
     
+    # Load scaler first if provided
+    scaler = None
+    if scaler_path and Path(scaler_path).exists():
+        import pickle
+        print("yes")
+        with open(scaler_path, 'rb') as f:
+            scaler = pickle.load(f)
+        print(f"Loaded scaler from {scaler_path}")
+    
     # Create faithful TL version using the extracted encoder
     tl_encoder = create_faithful_tl_model(hf_encoder, device)
 
     hf_internals = hf_regressor.mlp.model[0]
     tl_head = torch.nn.Linear(hf_internals.in_features, hf_internals.out_features, bias=True).to(device).eval()
     tl_head.load_state_dict(hf_internals.state_dict())
-    tl_regressor = FaithfulTLRegressor(tl_encoder, tl_head, dropout_p=hf_regressor.dropout.p, train_data=train_data).to(device).eval()
+    tl_regressor = FaithfulTLRegressor(tl_encoder, tl_head, dropout_p=hf_regressor.dropout.p, scaler=scaler, train_data=train_data).to(device).eval()
     
     # Load tokenizer
     tokenizer = RobertaTokenizerFast.from_pretrained(tokenizer_name)
     
-    # Load normalization pipeline if provided
-    normalization_pipeline = None
-    if normalization_pipeline_path and Path(normalization_pipeline_path).exists():
-        import pickle
-        with open(normalization_pipeline_path, 'rb') as f:
-            normalization_pipeline = pickle.load(f)
-        print(f"Loaded normalization pipeline from {normalization_pipeline_path}")
-    
-    return hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, normalization_pipeline 
+    return hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler 

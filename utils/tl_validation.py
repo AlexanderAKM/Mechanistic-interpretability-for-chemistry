@@ -80,7 +80,7 @@ def run_evaluation_metrics(model, test_data, tokenizer,
                           smiles_column: str = "smiles", target_column: str = "measured log solubility in mols per litre", 
                           batch_size: int = 64, device: Optional[str] = None,
                           use_tl_model: bool = True,
-                          normalization_pipeline: Optional[Dict] = None) -> Dict[str, float]:
+                          scaler = None) -> Dict[str, float]:
     """Run evaluation metrics (RMSE, R²) on test data.
     
     Args:
@@ -92,7 +92,7 @@ def run_evaluation_metrics(model, test_data, tokenizer,
         batch_size: Batch size for evaluation
         device: Device to use
         use_tl_model: Whether to use TL model instead of HF model
-        normalization_pipeline: Normalization pipeline containing training set statistics
+        scaler: Scaler containing training set statistics
         target_column: Target column name for normalization pipeline lookup
         
     Returns:
@@ -106,25 +106,14 @@ def run_evaluation_metrics(model, test_data, tokenizer,
     labels = test_data[target_column].astype("float32").values
 
     # Use training set normalization parameters if available
-    if (normalization_pipeline and target_column and 
-        'scaler' in normalization_pipeline and 
-        'numeric_cols' in normalization_pipeline):
-        
-        numeric_cols = normalization_pipeline['numeric_cols']
-        if target_column in numeric_cols:
-            target_idx = numeric_cols.index(target_column)
-            scaler = normalization_pipeline['scaler']
-            
-            # Use training set normalization parameters
-            mean = scaler.mean_[target_idx]
-            std = scaler.scale_[target_idx]  # scale_ is the standard deviation
-            
-            print(f"Using training set normalization: mean={mean:.4f}, std={std:.4f}")
-        else:
-            print(f"Warning: Target column '{target_column}' not found in numeric_cols, using test set stats")
-            mean, std = labels.mean(), labels.std()
+    if scaler:
+        # Use training set normalization parameters
+        mean = scaler.mean_[0]
+        std = scaler.scale_[0]
+
+        print(f"Using training set normalization: mean={mean:.4f}, std={std:.4f}")
     else:
-        print("Warning: No normalization pipeline provided, using test set statistics")
+        print("Warning: No scaler provided, using test set statistics")
         # Normalize targets (should match training normalization)
         mean, std = labels.mean(), labels.std()
     

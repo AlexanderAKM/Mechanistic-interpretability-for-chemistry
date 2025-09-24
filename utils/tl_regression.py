@@ -30,6 +30,7 @@ from .tl_conversion import FaithfulTLRegressor
 def run_regression_lens(
         tl_model: tl.HookedEncoder,
         regressor: FaithfulTLRegressor,
+        scaler,
         smiles: List[str],
         tokenizer: RobertaTokenizerFast,
         device: Optional[str] = None,
@@ -78,7 +79,7 @@ def run_regression_lens(
                     layer_name = f"After Transformer Block {layer}"
             
                 norm_prediction = regressor.mlp_head(representation).squeeze().item()
-                prediction = norm_prediction * regressor.train_std + regressor.train_mean
+                prediction = norm_prediction * scaler.scale_[0] + scaler.mean_[0]
                 layer_predictions.append(prediction)
 
                 result[layer_name] = prediction
@@ -90,6 +91,7 @@ def run_regression_lens(
 def compare_molecule_groups_regression_lens(
         tl_model: tl.HookedEncoder,
         regressor: FaithfulTLRegressor,
+        scaler,
         group_smiles: Dict,
         tokenizer: RobertaTokenizerFast,
         device: Optional[str] = None,
@@ -112,7 +114,7 @@ def compare_molecule_groups_regression_lens(
     results = {}
 
     for group, smiles in group_smiles.items():
-        group_results = run_regression_lens(tl_model, regressor, smiles, tokenizer)
+        group_results = run_regression_lens(tl_model, regressor, scaler, smiles, tokenizer)
         results[group] = group_results
 
         # Compute per-layer mean and std across all molecules in the group

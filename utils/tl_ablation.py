@@ -160,7 +160,7 @@ def run_ablation_analysis_with_metrics(
         device: Optional[str] = None,
         output_dir: Optional[Path] = Path("results"),
         display_denormalized: bool = True,
-        normalization_pipeline: dict = None,
+        scaler = None,
 ) -> Dict:
     """Run comprehensive ablation analysis using proper evaluation metrics.
     
@@ -197,7 +197,7 @@ def run_ablation_analysis_with_metrics(
                                               test_data=test_data,
                                               tokenizer=tokenizer,
                                               use_tl_model=True,
-                                              normalization_pipeline=normalization_pipeline)
+                                              scaler=scaler)
 
     results = {
         "baseline": baseline_results,
@@ -228,7 +228,7 @@ def run_ablation_analysis_with_metrics(
                 faithful_tl_model=ablated_model,
                 mlp_head=tl_regressor.mlp_head,
                 dropout_p=tl_regressor.dropout.p,
-                normalization_pipeline=normalization_pipeline if normalization_pipeline is not None else getattr(tl_regressor, "normalization_pipeline", None),
+                scaler=scaler if scaler is not None else getattr(tl_regressor, "scaler", None),
                 target_column=target_column,
             ).eval()
 
@@ -239,7 +239,7 @@ def run_ablation_analysis_with_metrics(
                 smiles_column,
                 target_column,
                 use_tl_model=True,
-                normalization_pipeline=normalization_pipeline,
+                scaler=scaler,
             )
             pct_results.append(eval_results)
 
@@ -278,7 +278,7 @@ def run_ablation_analysis_with_metrics(
                 faithful_tl_model=ablated_model,
                 mlp_head=tl_regressor.mlp_head,
                 dropout_p=tl_regressor.dropout.p,
-                normalization_pipeline=normalization_pipeline if normalization_pipeline is not None else getattr(tl_regressor, "normalization_pipeline", None),
+                scaler=scaler if scaler is not None else getattr(tl_regressor, "scaler", None),
                 target_column=target_column,
             ).eval()
 
@@ -289,7 +289,7 @@ def run_ablation_analysis_with_metrics(
                 smiles_column,
                 target_column,
                 use_tl_model=True,
-                normalization_pipeline=normalization_pipeline,
+                scaler=scaler,
             )
             pct_results.append(eval_results)
 
@@ -332,7 +332,7 @@ def run_ablation_analysis_with_metrics(
                 faithful_tl_model=ablated_model,
                 mlp_head=tl_regressor.mlp_head,
                 dropout_p=tl_regressor.dropout.p,
-                normalization_pipeline=normalization_pipeline if normalization_pipeline is not None else getattr(tl_regressor, "normalization_pipeline", None),
+                scaler=scaler if scaler is not None else getattr(tl_regressor, "scaler", None),
                 target_column=target_column,
             ).eval()
 
@@ -343,7 +343,7 @@ def run_ablation_analysis_with_metrics(
                 smiles_column,
                 target_column,
                 use_tl_model=True,
-                normalization_pipeline=normalization_pipeline,
+                scaler=scaler,
             )
             pct_results.append(eval_results)
 
