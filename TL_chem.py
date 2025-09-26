@@ -83,7 +83,6 @@ results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer
 min_max_molecules = [train_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0], train_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0]]
 
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_molecules, tokenizer)
-results
 plot_individual_molecules_regression_lens(results, results_dir=Path("results/ESOL/regression_lens"))
 
 # %% [markdown]
@@ -256,7 +255,8 @@ hce = pd.read_csv("data/test_hce.csv")
 for i in range(len(hce["pce_1"])):
     print(hce["pce_1"][i])
 # %%
-
+esol = pd.read_csv("data/delaney-post-processed.csv")
+len(esol)
 
 # %%
 # TODO: activation patching, see thesis repo
