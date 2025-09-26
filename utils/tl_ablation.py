@@ -182,7 +182,7 @@ def run_ablation_analysis_with_metrics(
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     
     if ablation_percentages is None:
-        ablation_percentages = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        ablation_percentages = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
     test_molecules = test_data[smiles_column].to_list()
     targets = test_data[target_column].to_list()
@@ -384,9 +384,21 @@ def run_ablation_analysis_with_metrics(
                     "ablation_type": type_labels[ablation_type],
                     "ablation_percentage": pct,
                     f"mae": pct_data[f"mean_mae"],
+                    f"mae_std": pct_data[f"std_mae"],
                     f"mse": pct_data[f"mean_mse"],
+                    f"mse_std": pct_data[f"std_mse"],
                     f"rmse": pct_data[f"mean_rmse"],
+                    f"rmse_std": pct_data[f"std_rmse"],
                     f"r2": pct_data[f"mean_r2"],
+                    f"r2_std": pct_data[f"std_r2"],
+                    f"mae_norm": pct_data[f"mean_mae_norm"],
+                    f"mae_norm_std": pct_data[f"std_mae_norm"],
+                    f"mse_norm": pct_data[f"mean_mse_norm"],
+                    f"mse_norm_std": pct_data[f"std_mse_norm"],
+                    f"rmse_norm": pct_data[f"mean_rmse_norm"],
+                    f"rmse_norm_std": pct_data[f"std_rmse_norm"],
+                    f"r2_norm": pct_data[f"mean_r2_norm"],
+                    f"r2_norm_std": pct_data[f"std_r2_norm"],
                     "mae_degradation": pct_data["mae_degradation"],
                     "mse_degradation": pct_data["mse_degradation"],
                     "rmse_degradation": pct_data["rmse_degradation"],
