@@ -12,6 +12,9 @@
 # Essentially, this is just a file which runs the techniques shown in the paper
 # For **all three datasets**. There is lots of repetitive code, but easiest
 # and this way it's easy to go through the methods and develop them.
+# %%
+results = pd.read_csv("../Results/ESOL/ablation/ablation_metrics_summary.csv")
+results
 #%%
 from pathlib import Path
 import torch
@@ -64,7 +67,7 @@ targets = test_data[TARGET_COLUMN].to_list()
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
-results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../Results/ESOL"), n_seeds=5, scaler=scaler)
+results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../Results/ESOL"), n_seeds=5, scaler=scaler, ablation_percentages=[0.9, 1.0])
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique

@@ -156,7 +156,7 @@ def run_ablation_analysis_with_metrics(
         smiles_column: str = "smiles",
         target_column: str = "measured log solubility in mols per litre",
         ablation_percentages: List[float] = None,
-        n_seeds: int = 3,
+        n_seeds: int = 5,
         device: Optional[str] = None,
         output_dir: Optional[Path] = Path("results"),
         display_denormalized: bool = True,
