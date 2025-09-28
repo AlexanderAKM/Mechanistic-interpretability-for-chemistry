@@ -72,11 +72,11 @@ def run_regression_lens(
                 if layer == 0:
                     # After embedding but before any transformer blocks
                     representation = cache["hook_full_embed"][0, 0, :]
-                    layer_name = "After embedding"
+                    layer_name = "Embedding"
                     cache_key = "hook_full_embed"
                 else:
                     representation = cache[f"blocks.{layer-1}.hook_normalized_resid_post"][0, 0, :]
-                    layer_name = f"After Transformer Block {layer}"
+                    layer_name = f"{layer}"
             
                 norm_prediction = regressor.mlp_head(representation).squeeze().item()
                 prediction = norm_prediction * scaler.scale_[0] + scaler.mean_[0]
@@ -144,7 +144,7 @@ def plot_individual_molecules_regression_lens(
     for i, (smile, smile_results) in enumerate(results.items()):
         plt.plot(range(len(smile_results)), smile_results.values(), 'o-', alpha=0.7, label=smile)
     
-    plt.xlabel('Block', fontsize=16)
+    plt.xlabel('Layer', fontsize=16)
     plt.ylabel("Prediction", fontsize=16)
     plt.xticks(range(len(smile_results)), smile_results.keys(), rotation=45, fontsize=14)
     plt.yticks(fontsize=14)
@@ -171,7 +171,7 @@ def plot_group_molecules_regression_lens(
         mean_values = [group_data["mean"][layer] for layer in layer_names]
         plt.plot(range(len(layer_names)), mean_values, 'o-', alpha=0.8, label=group_name)
 
-    plt.xlabel('Block', fontsize=16)
+    plt.xlabel('Layer', fontsize=16)
     plt.ylabel("Mean Prediction", fontsize=16)
     plt.xticks(range(len(layer_names)), layer_names, rotation=45, fontsize=14)
     plt.yticks(fontsize=14)
@@ -187,7 +187,7 @@ def plot_group_molecules_regression_lens(
         std_values = [group_data["variance"][layer] for layer in layer_names]
         plt.plot(range(len(layer_names)), std_values, 'o-', alpha=0.8, label=group_name)
 
-    plt.xlabel('Block', fontsize=16)
+    plt.xlabel('Layer', fontsize=16)
     plt.ylabel("Prediction Variance", fontsize=16)
     plt.xticks(range(len(layer_names)), layer_names, rotation=45, fontsize=14)
     plt.yticks(fontsize=14)

@@ -445,9 +445,9 @@ def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
         
     # Plot 1: MAE values
     fig1, ax1 = plt.subplots(1, 1, figsize=(10, 8))
-    ax1.plot(ablation_pcts, mlp_mae, 'o-', label='FFN Ablation', linewidth=2, markersize=6)
-    ax1.plot(ablation_pcts, attention_mae, 's-', label='Attention Head Ablation', linewidth=2, markersize=6)
-    ax1.plot(ablation_pcts, combined_mae, '^-', label='Combined Ablation', linewidth=2, markersize=6)
+    ax1.plot(ablation_pcts, mlp_mae, 'o-', label='FFN Ablation', linewidth=3, markersize=8, color='#1f77b4')
+    ax1.plot(ablation_pcts, attention_mae, 's-', label='Attention Head Ablation', linewidth=3, markersize=8, color='#ff7f0e')
+    ax1.plot(ablation_pcts, combined_mae, '^-', label='Combined Ablation', linewidth=3, markersize=8, color='#d62728')
     
     ax1.set_xlabel('Ablation Percentage (%)', fontsize=16)
     ax1.set_ylabel(f'Mean Absolute Error', fontsize=16)
@@ -476,13 +476,16 @@ def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
     attention_r2_ci = [std * ci_multiplier for std in attention_r2_std]
     combined_r2_ci = [std * ci_multiplier for std in combined_r2_std]
     
-    # Plot with less prominent error bars
+    # Plot with more distinct confidence intervals and better colors
     ax2.errorbar(ablation_pcts, mlp_r2, yerr=mlp_r2_ci, fmt='o-', label='FFN Ablation', 
-                linewidth=2, markersize=6, capsize=2, capthick=0.8, elinewidth=1, alpha=0.7)
+                linewidth=3, markersize=8, capsize=5, capthick=2, elinewidth=2, alpha=0.9,
+                color='#1f77b4')  # Blue
     ax2.errorbar(ablation_pcts, attention_r2, yerr=attention_r2_ci, fmt='s-', label='Attention Head Ablation', 
-                linewidth=2, markersize=6, capsize=2, capthick=0.8, elinewidth=1, alpha=0.7)
+                linewidth=3, markersize=8, capsize=5, capthick=2, elinewidth=2, alpha=0.9,
+                color='#ff7f0e')  # Orange  
     ax2.errorbar(ablation_pcts, combined_r2, yerr=combined_r2_ci, fmt='^-', label='Combined Ablation', 
-                linewidth=2, markersize=6, capsize=2, capthick=0.8, elinewidth=1, alpha=0.7)
+                linewidth=3, markersize=8, capsize=5, capthick=2, elinewidth=2, alpha=0.9,
+                color='#d62728')  # Red
     
     ax2.set_xlabel('Ablation Percentage (%)', fontsize=16)
     ax2.set_ylabel(f'R² Score', fontsize=16)
@@ -496,9 +499,9 @@ def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
     
     # Plot 3: RMSE values
     fig3, ax3 = plt.subplots(1, 1, figsize=(10, 8))
-    ax3.plot(ablation_pcts, mlp_rmse, 'o-', label='MLP Ablation', linewidth=2, markersize=6)
-    ax3.plot(ablation_pcts, attention_rmse, 's-', label='Attention Head Ablation', linewidth=2, markersize=6)
-    ax3.plot(ablation_pcts, combined_rmse, '^-', label='Combined Ablation', linewidth=2, markersize=6)
+    ax3.plot(ablation_pcts, mlp_rmse, 'o-', label='FFN Ablation', linewidth=3, markersize=8, color='#1f77b4')
+    ax3.plot(ablation_pcts, attention_rmse, 's-', label='Attention Head Ablation', linewidth=3, markersize=8, color='#ff7f0e')
+    ax3.plot(ablation_pcts, combined_rmse, '^-', label='Combined Ablation', linewidth=3, markersize=8, color='#d62728')
     
     ax3.set_xlabel('Ablation Percentage (%)', fontsize=16)
     ax3.set_ylabel(f'Root Mean Squared Error', fontsize=16)
@@ -523,9 +526,9 @@ def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
     x = np.arange(len(key_pcts))
     width = 0.25
     
-    ax4.bar(x - width, mlp_key_mae, width, label='MLP Ablation', alpha=0.8)
-    ax4.bar(x, attention_key_mae, width, label='Attention Head Ablation', alpha=0.8)
-    ax4.bar(x + width, combined_key_mae, width, label='Combined Ablation', alpha=0.8)
+    ax4.bar(x - width, mlp_key_mae, width, label='FFN Ablation', alpha=0.8, color='#1f77b4')
+    ax4.bar(x, attention_key_mae, width, label='Attention Head Ablation', alpha=0.8, color='#ff7f0e')
+    ax4.bar(x + width, combined_key_mae, width, label='Combined Ablation', alpha=0.8, color='#d62728')
 
     ax4.set_xlabel('Ablation Percentage (%)', fontsize=16)
     ax4.set_ylabel(f'Mean Absolute Error', fontsize=16)

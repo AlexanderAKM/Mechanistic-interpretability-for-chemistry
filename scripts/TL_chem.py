@@ -70,15 +70,27 @@ print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
 results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path(f"../results/ESOL"), n_seeds=10, scaler=scaler)
 
+import pickle
+importlib.reload(utils.tl_ablation)
+from utils.tl_ablation import plot_ablation_metrics
+with open("../results/ESOL/ablation/all_results.pkl", "rb") as f:
+    results = pickle.load(f)
+plot_ablation_metrics(results, Path("../results/ESOL"))
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique
 # on the training data
 min_max_molecules = [train_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0], train_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0]]
 
+# Reload the module and re-import the functions
+importlib.reload(utils.tl_regression)
+from utils.tl_regression import run_regression_lens, plot_individual_molecules_regression_lens
+
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_molecules, tokenizer)
 plot_individual_molecules_regression_lens(results, results_dir=Path("../results/ESOL/regression_lens"))
 
+# %%
+min_max_molecules
 # %%
 # %% [markdown]
 # Now we do regression lens on groups of molecules
