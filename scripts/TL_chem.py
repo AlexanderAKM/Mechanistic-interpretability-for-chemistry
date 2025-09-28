@@ -68,17 +68,7 @@ targets = test_data[TARGET_COLUMN].to_list()
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
-results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../results/ESOL"), n_seeds=2, scaler=scaler)
-
-# %%
-import pickle
-with open("../results/ESOL/ablation/all_results.pkl", "wb") as f:
-    pickle.dump(results, f)
-
-with open("../results/ESOL/ablation/all_results.pkl", "rb") as f:
-    loaded_results = pickle.load(f)
-
-plot_ablation_metrics(loaded_results, Path("../results/ESOL"))
+results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../results/ESOL"), n_seeds=10, scaler=scaler)
 
 # %% [markdown]
 # We move on to regression lens
@@ -90,7 +80,6 @@ results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_molecule
 plot_individual_molecules_regression_lens(results, results_dir=Path("../results/ESOL/regression_lens"))
 
 # %%
-results
 # %% [markdown]
 # Now we do regression lens on groups of molecules
 # First example group
