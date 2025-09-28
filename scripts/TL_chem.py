@@ -68,7 +68,7 @@ targets = test_data[TARGET_COLUMN].to_list()
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
-results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../results/ESOL"), n_seeds=10, scaler=scaler)
+results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path(f"../results/ESOL"), n_seeds=10, scaler=scaler)
 
 # %% [markdown]
 # We move on to regression lens
@@ -83,14 +83,14 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("../results/
 # %% [markdown]
 # Now we do regression lens on groups of molecules
 # First example group
-# example_molecule_groups = {
-#     "Simple Alcohols": ["CCO", "CC(C)O", "CCCO"],
-#     "Aromatic": ["c1ccccc1", "c1ccc(C)cc1", "c1ccc(O)cc1"],  
-#     "Carboxylic Acids": ["CC(=O)O", "CCC(=O)O", "c1ccc(C(=O)O)cc1"],
-#     "Alkanes": ["CC", "CCC", "CCCCCCCCCC"]
-# }
-# example_group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, example_molecule_groups, tokenizer, DEVICE)
-# plot_group_molecules_regression_lens(example_group_results, results_dir=Path("../results/ESOL/regression_lens")
+example_molecule_groups = {
+    "Simple Alcohols": ["CCO", "CC(C)O", "CCCO"],
+    "Aromatic": ["c1ccccc1", "c1ccc(C)cc1", "c1ccc(O)cc1"],  
+    "Carboxylic Acids": ["CC(=O)O", "CCC(=O)O", "c1ccc(C(=O)O)cc1"],
+    "Alkanes": ["CC", "CCC", "CCCCCCCCCC"]
+}
+example_group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, example_molecule_groups, tokenizer, DEVICE)
+plot_group_molecules_regression_lens(example_group_results, results_dir=Path("../results/ESOL/example_regression_lens"))
 
 # With clustering
 molecule_groups = cluster(train_data)
@@ -117,6 +117,8 @@ hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler = load_che
     MODEL_PATH, TOKENIZER_NAME, DEVICE, SCALER_PATH, train_data=train_data
 )
 print(hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler)
+
+
 # %% [markdown]
 # Validating conversation (check whether the two models have the same internals and output, extremely important!)
 # First check internal and then output
@@ -137,8 +139,13 @@ targets = test_data[TARGET_COLUMN].to_list()
 
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
+TARGET_COLUMN
 
-results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../results/qm9"), n_seeds=5, scaler=scaler)
+# Reload to get the target_column fix
+importlib.reload(utils.tl_ablation)
+from utils.tl_ablation import run_ablation_analysis_with_metrics
+
+results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path(f"../results/qm9"), n_seeds=10, scaler=scaler)
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique
@@ -202,7 +209,7 @@ targets = test_data[TARGET_COLUMN].to_list()
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
-results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../results/hce"), n_seeds=5, scaler=scaler)
+results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path(f"../results/hce"), n_seeds=10, scaler=scaler)
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique
@@ -213,14 +220,15 @@ results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_molecule
 plot_individual_molecules_regression_lens(results, results_dir=Path("../results/hce/regression_lens"))
 
 # %% [markdown]
-# Now we do regression lens on groups of molecules
-# First example group
-# example_molecule_groups = {
-#     "Simple Alcohols": ["CCO", "CC(C)O", "CCCO"],
-#     "Aromatic": ["c1ccccc1", "c1ccc(C)cc1", "c1ccc(O)cc1"],  
-#     "Carboxylic Acids": ["CC(=O)O", "CCC(=O)O", "c1ccc(C(=O)O)cc1"],
-#     "Alkanes": ["CC", "CCC", "CCCCCCCCCC"]
-# }
+example_molecule_groups = {
+    "Simple Alcohols": ["CCO", "CC(C)O", "CCCO"],
+    "Aromatic": ["c1ccccc1", "c1ccc(C)cc1", "c1ccc(O)cc1"],  
+    "Carboxylic Acids": ["CC(=O)O", "CCC(=O)O", "c1ccc(C(=O)O)cc1"],
+    "Alkanes": ["CC", "CCC", "CCCCCCCCCC"]
+}
+example_group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, example_molecule_groups, tokenizer, DEVICE)
+plot_group_molecules_regression_lens(example_group_results, results_dir=Path("../results/hce/example_regression_lens"))
+
 
 # With clustering
 molecule_groups = cluster(train_data)

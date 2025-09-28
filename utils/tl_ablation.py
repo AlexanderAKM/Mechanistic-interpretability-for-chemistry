@@ -195,6 +195,8 @@ def run_ablation_analysis_with_metrics(
     baseline_results = run_evaluation_metrics(model=tl_regressor,
                                               test_data=test_data,
                                               tokenizer=tokenizer,
+                                              smiles_column=smiles_column,
+                                              target_column=target_column,
                                               use_tl_model=True,
                                               scaler=scaler)
 
@@ -407,7 +409,7 @@ def run_ablation_analysis_with_metrics(
         df = pd.DataFrame(summary_data)
         df.to_csv(ablation_dir / "ablation_metrics_summary.csv", index=False)
     
-        with open(ablation_dir / "all_results", "wb") as f:
+        with open(ablation_dir / "all_results.pkl", "wb") as f:
             pickle.dump(results, f)
         plot_ablation_metrics(results, output_dir)
     
