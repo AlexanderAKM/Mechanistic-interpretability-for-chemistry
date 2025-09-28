@@ -67,7 +67,7 @@ targets = test_data[TARGET_COLUMN].to_list()
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
-results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../Results/ESOL"), n_seeds=5, scaler=scaler, ablation_percentages=[0.9, 1.0])
+results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../results/ESOL"), n_seeds=10, scaler=scaler)
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique

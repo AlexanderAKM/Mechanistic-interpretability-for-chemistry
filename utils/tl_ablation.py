@@ -250,7 +250,7 @@ def run_ablation_analysis_with_metrics(
         for metric in metrics_to_avg:
             values = [res[metric] for res in pct_results]
             aggregated[f"mean_{metric}"] = np.mean(values)
-            aggregated[f"std_{metric}"] = np.std(values)
+            aggregated[f"std_{metric}"] = np.std(values, ddof=1)  
         
         # Primary method is to look at non-normalized outputs
         aggregated.update({
@@ -300,7 +300,7 @@ def run_ablation_analysis_with_metrics(
         for metric in metrics_to_avg:
             values = [res[metric] for res in pct_results]
             aggregated[f"mean_{metric}"] = np.mean(values)
-            aggregated[f"std_{metric}"] = np.std(values)
+            aggregated[f"std_{metric}"] = np.std(values, ddof=1)  
         
         # Primary method is to look at non-normalized outputs
         aggregated.update({
@@ -354,7 +354,7 @@ def run_ablation_analysis_with_metrics(
         for metric in metrics_to_avg:
             values = [res[metric] for res in pct_results]
             aggregated[f"mean_{metric}"] = np.mean(values)
-            aggregated[f"std_{metric}"] = np.std(values)
+            aggregated[f"std_{metric}"] = np.std(values, ddof=1)  # Sample standard deviation
         
         # Primary method is to look at non-normalized outputs
         aggregated.update({
@@ -456,11 +456,29 @@ def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
     plt.savefig(ablation_dir / "mae_ablation_plot.pdf", dpi=300, bbox_inches="tight")
     plt.close()
     
-    # Plot 2: R² values
+    # Plot 2: R² values with confidence intervals
     fig2, ax2 = plt.subplots(1, 1, figsize=(10, 8))
-    ax2.plot(ablation_pcts, mlp_r2, 'o-', label='FFN Ablation', linewidth=2, markersize=6)
-    ax2.plot(ablation_pcts, attention_r2, 's-', label='Attention Head Ablation', linewidth=2, markersize=6)
-    ax2.plot(ablation_pcts, combined_r2, '^-', label='Combined Ablation', linewidth=2, markersize=6)
+    
+    # Extract standard errors for confidence intervals (95% CI = ±1.96*SE)
+    mlp_r2_std = [results["mlp_ablation"][pct/100][f"std_r2"] for pct in ablation_pcts]
+    attention_r2_std = [results["attention_ablation"][pct/100][f"std_r2"] for pct in ablation_pcts]
+    combined_r2_std = [results["combined_ablation"][pct/100][f"std_r2"] for pct in ablation_pcts]
+    
+    # Calculate 95% confidence intervals (assuming normal distribution)
+    n_seeds = len(results["mlp_ablation"][list(results["mlp_ablation"].keys())[0]]["seeds_results"])
+    ci_multiplier = 1.96 / np.sqrt(n_seeds)  # 95% CI for sample mean
+    
+    mlp_r2_ci = [std * ci_multiplier for std in mlp_r2_std]
+    attention_r2_ci = [std * ci_multiplier for std in attention_r2_std]
+    combined_r2_ci = [std * ci_multiplier for std in combined_r2_std]
+    
+    # Plot with error bars
+    ax2.errorbar(ablation_pcts, mlp_r2, yerr=mlp_r2_ci, fmt='o-', label='FFN Ablation', 
+                linewidth=2, markersize=6, capsize=4, capthick=1.5)
+    ax2.errorbar(ablation_pcts, attention_r2, yerr=attention_r2_ci, fmt='s-', label='Attention Head Ablation', 
+                linewidth=2, markersize=6, capsize=4, capthick=1.5)
+    ax2.errorbar(ablation_pcts, combined_r2, yerr=combined_r2_ci, fmt='^-', label='Combined Ablation', 
+                linewidth=2, markersize=6, capsize=4, capthick=1.5)
     
     ax2.set_xlabel('Ablation Percentage (%)', fontsize=16)
     ax2.set_ylabel(f'R² Score', fontsize=16)
