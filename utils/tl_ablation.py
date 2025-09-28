@@ -34,10 +34,10 @@ Key functions:
 """
 
 import random
-import types
 import copy
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
+import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -45,7 +45,6 @@ import pandas as pd
 import torch
 import transformer_lens as tl
 from transformers import RobertaTokenizerFast
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from .tl_conversion import FaithfulTLRegressor
 from .tl_validation import run_evaluation_metrics
@@ -408,8 +407,10 @@ def run_ablation_analysis_with_metrics(
         df = pd.DataFrame(summary_data)
         df.to_csv(ablation_dir / "ablation_metrics_summary.csv", index=False)
     
+        with open(ablation_dir / "all_results", "wb") as f:
+            pickle.dump(results, f)
         plot_ablation_metrics(results, output_dir)
-
+    
     return results
 
 def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
@@ -466,19 +467,20 @@ def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
     
     # Calculate 95% confidence intervals (assuming normal distribution)
     n_seeds = len(results["mlp_ablation"][list(results["mlp_ablation"].keys())[0]]["seeds_results"])
+    print(n_seeds)
     ci_multiplier = 1.96 / np.sqrt(n_seeds)  # 95% CI for sample mean
     
     mlp_r2_ci = [std * ci_multiplier for std in mlp_r2_std]
     attention_r2_ci = [std * ci_multiplier for std in attention_r2_std]
     combined_r2_ci = [std * ci_multiplier for std in combined_r2_std]
     
-    # Plot with error bars
+    # Plot with less prominent error bars
     ax2.errorbar(ablation_pcts, mlp_r2, yerr=mlp_r2_ci, fmt='o-', label='FFN Ablation', 
-                linewidth=2, markersize=6, capsize=4, capthick=1.5)
+                linewidth=2, markersize=6, capsize=2, capthick=0.8, elinewidth=1, alpha=0.7)
     ax2.errorbar(ablation_pcts, attention_r2, yerr=attention_r2_ci, fmt='s-', label='Attention Head Ablation', 
-                linewidth=2, markersize=6, capsize=4, capthick=1.5)
+                linewidth=2, markersize=6, capsize=2, capthick=0.8, elinewidth=1, alpha=0.7)
     ax2.errorbar(ablation_pcts, combined_r2, yerr=combined_r2_ci, fmt='^-', label='Combined Ablation', 
-                linewidth=2, markersize=6, capsize=4, capthick=1.5)
+                linewidth=2, markersize=6, capsize=2, capthick=0.8, elinewidth=1, alpha=0.7)
     
     ax2.set_xlabel('Ablation Percentage (%)', fontsize=16)
     ax2.set_ylabel(f'R² Score', fontsize=16)

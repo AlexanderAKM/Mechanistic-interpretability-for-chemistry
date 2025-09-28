@@ -13,22 +13,23 @@
 # For **all three datasets**. There is lots of repetitive code, but easiest
 # and this way it's easy to go through the methods and develop them.
 # %%
-results = pd.read_csv("../Results/ESOL/ablation/ablation_metrics_summary.csv")
-results
-#%%
 from pathlib import Path
 import torch
 import pandas as pd
 import os
 import sys
+import importlib
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.tl_conversion import load_chemberta_models
 from utils.tl_validation import validate_conversion, test_prediction_equivalence
-from utils.tl_ablation import run_ablation_analysis_with_metrics
+import utils.tl_ablation
+from utils.tl_ablation import run_ablation_analysis_with_metrics, plot_ablation_metrics
 from utils.tl_regression import run_regression_lens, plot_individual_molecules_regression_lens
 from utils.tl_regression import compare_molecule_groups_regression_lens, plot_group_molecules_regression_lens
-from clustering import cluster
+from scripts.clustering import cluster
+
 # %%
 # **First for ESOL**
 MODEL_PATH = "../trained_models/train_ESOL/chemberta/chemberta_model_final.bin"
@@ -67,7 +68,18 @@ targets = test_data[TARGET_COLUMN].to_list()
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
-results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../results/ESOL"), n_seeds=10, scaler=scaler)
+results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, output_dir=Path(f"../results/ESOL"), n_seeds=2, scaler=scaler)
+
+# %%
+import pickle
+with open("../results/ESOL/ablation/all_results.pkl", "wb") as f:
+    pickle.dump(results, f)
+
+with open("../results/ESOL/ablation/all_results.pkl", "rb") as f:
+    loaded_results = pickle.load(f)
+
+plot_ablation_metrics(loaded_results, Path("../results/ESOL"))
+
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique
@@ -77,6 +89,8 @@ min_max_molecules = [train_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_molecules, tokenizer)
 plot_individual_molecules_regression_lens(results, results_dir=Path("../results/ESOL/regression_lens"))
 
+# %%
+results
 # %% [markdown]
 # Now we do regression lens on groups of molecules
 # First example group
@@ -86,6 +100,8 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("../results/
 #     "Carboxylic Acids": ["CC(=O)O", "CCC(=O)O", "c1ccc(C(=O)O)cc1"],
 #     "Alkanes": ["CC", "CCC", "CCCCCCCCCC"]
 # }
+# example_group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, example_molecule_groups, tokenizer, DEVICE)
+# plot_group_molecules_regression_lens(example_group_results, results_dir=Path("../results/ESOL/regression_lens")
 
 # With clustering
 molecule_groups = cluster(train_data)
