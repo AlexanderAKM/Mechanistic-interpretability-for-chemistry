@@ -106,6 +106,10 @@ plot_group_molecules_regression_lens(example_group_results, results_dir=Path("..
 
 # With clustering
 molecule_groups = cluster(train_data)
+import json
+with open("../results/ESOL/molecule_groups.json", "w") as f:
+    json.dump(molecule_groups, f, indent=2)
+
 
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
 plot_group_molecules_regression_lens(group_results, results_dir=Path("../results/ESOL/regression_lens"))
@@ -180,9 +184,16 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("../results/
 # With clustering
 molecule_groups = cluster(train_data)
 
+
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
 plot_group_molecules_regression_lens(group_results, results_dir=Path("../results/qm9/regression_lens"))
 
+# %%
+import pickle
+with open('../results/qm9/ablation/all_results.pkl', 'rb') as f:
+    results = pickle.load(f)
+
+plot_ablation_metrics(results, Path("../results/qm9"))
 # %%
 # Now for **hce dataset**
 MODEL_PATH = "../trained_models/train_hce/chemberta/chemberta_model_final.bin"
@@ -222,6 +233,12 @@ print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
 results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path(f"../results/hce"), n_seeds=10, scaler=scaler)
+
+# %%
+with open("../results/hce/ablation/all_results.pkl", "rb") as f:
+    results = pickle.load(f)
+
+plot_ablation_metrics(results, Path("../results/hce"))
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique
@@ -248,4 +265,11 @@ molecule_groups = cluster(train_data)
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
 plot_group_molecules_regression_lens(group_results, results_dir=Path("../results/hce/regression_lens"))
 
+
+# %%
+
 # TODO: activation patching, see thesis repo
+
+# %%
+
+# %%
