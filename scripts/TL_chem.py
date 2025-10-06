@@ -31,6 +31,11 @@ from utils.tl_regression import compare_molecule_groups_regression_lens, plot_gr
 from scripts.clustering import cluster
 
 # %%
+import matplotlib.pyplot as plt
+full_data = pd.read_csv("../data/qm9.csv")
+plt.hist(full_data["g298_atom"])
+
+# %%
 # **First for ESOL**
 MODEL_PATH = "../trained_models/train_ESOL/chemberta/chemberta_model_final.bin"
 TEST_PATH = "../data/test_ESOL.csv"
@@ -71,11 +76,22 @@ print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path(f"../results/ESOL"), n_seeds=10, scaler=scaler)
 
 import pickle
-importlib.reload(utils.tl_ablation)
-from utils.tl_ablation import plot_ablation_metrics
 with open("../results/ESOL/ablation/all_results.pkl", "rb") as f:
     results = pickle.load(f)
 plot_ablation_metrics(results, Path("../results/ESOL"))
+
+# %%
+from utils.normalizing import normalize_csv
+test_data_norm, scaler = normalize_csv(test_data, TARGET_COLUMN, scaler, fit_scaler=False)
+from utils.chemberta_workflows import evaluate_chemberta_model
+evaluate_chemberta_model(
+    model=hf_regressor, 
+    dataset=test_data_norm, 
+    scaler=scaler, 
+    target_column=TARGET_COLUMN, 
+    output_dir="../results/ESOL/evaluate",
+    tokenizer=tokenizer
+)
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique
@@ -134,6 +150,9 @@ hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler = load_che
 )
 print(hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler)
 
+# %%
+full_data = pd.read_csv("../data/hce.csv")
+full_data.shape[0] / 80 * 100
 
 # %% [markdown]
 # Validating conversation (check whether the two models have the same internals and output, extremely important!)

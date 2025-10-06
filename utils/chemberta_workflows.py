@@ -194,8 +194,106 @@ def get_compute_metrics_fn(scaler, target_column):
     
     return compute_metrics
 
+def evaluate_chemberta_model(
+    model, 
+    dataset, 
+    scaler, 
+    target_column="pce_1",
+    output_dir=None, 
+    trainer=None, 
+    batch_size=32,
+    plot_filename="preds_vs_targets.pdf",
+    smiles_column="smiles",
+    tokenizer=None,
+):
+    """
+    Evaluate a ChemBERTa model on a dataset and optionally plot results.
+
+    Args:
+        model: The ChemBERTa model to evaluate
+        dataset: The dataset to evaluate on (ChembertaDataset or pandas DataFrame)
+        scaler: Scaler used for normalization (for inverse transform)
+        target_column: Name of the target column (default: "pce_1")
+        output_dir: Directory to save plots and results (optional)
+        trainer: Existing trainer instance (optional, will create one if not provided)
+        batch_size: Batch size for evaluation (default: 32)
+        plot_filename: Name of the plot file (default: "preds_vs_targets.pdf")
+        smiles_column: Name of SMILES column if dataset is a DataFrame (default: "smiles")
+        tokenizer: Tokenizer to use if dataset is a DataFrame (required if dataset is DataFrame)
+
+    Returns:
+        dict: Results including metrics, predictions, targets
+    """
+    
+    if isinstance(dataset, pd.DataFrame):
+        if tokenizer is None:
+            tokenizer = RobertaTokenizerFast.from_pretrained(DEFAULT_PRETRAINED_NAME)
+        
+        texts = dataset[smiles_column].tolist()
+        targets = dataset[target_column].values.astype(np.float32)
+        dataset = ChembertaDataset(texts, targets, tokenizer)
+    
+    if trainer is None:
+        training_args = TrainingArguments(
+            output_dir=output_dir,
+            per_device_eval_batch_size=batch_size,
+            report_to="none",
+        )
+        
+        compute_metrics = get_compute_metrics_fn(scaler=scaler, target_column=target_column)
+        
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            compute_metrics=compute_metrics,
+        )
+    
+    print("\nEvaluating model...")
+    predictions_output = trainer.predict(dataset)
+    preds = predictions_output.predictions.squeeze(-1)
+    labels = predictions_output.label_ids
+    metrics = predictions_output.metrics
+    orig_preds = inverse_transform(preds, scaler)
+    orig_labels = inverse_transform(labels, scaler)
+    
+    print(f"\nModel parameters:")
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"  Total parameters: {total_params:,}")
+    print(f"  Trainable parameters: {trainable_params:,}")
+    
+    print(f"\nEvaluation Metrics:")
+    for key, value in metrics.items():
+        if not key.startswith("eval_"):
+            print(f"  {key}: {value:.4f}")
+        else:
+            print(f"  {key[5:]}: {value:.4f}")
+    
+    os.makedirs(output_dir, exist_ok=True)
+    plot_predictions_vs_targets(
+        predictions=orig_preds,
+        targets=orig_labels,
+        output_path=output_dir,
+        output_filename=plot_filename,
+    )
+    print(f"\nPlot saved to {os.path.join(output_dir, plot_filename)}")
+    
+    results = {
+        "metrics": metrics,
+        "predictions": orig_preds.tolist() if hasattr(orig_preds, 'tolist') else list(orig_preds),
+        "targets": orig_labels.tolist() if hasattr(orig_labels, 'tolist') else list(orig_labels),
+    }
+    
+    results_path = os.path.join(output_dir, "evaluation_results.json")
+    with open(results_path, "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"Evaluation results saved to {results_path}")
+    
+    return results
+
+
 def train_chemberta_model(
-    args, df_train, df_test, scaler, device=None
+    args, df_train, df_test, scaler, device=None, evaluate_after_training=True
 ):
     """
     Train a ChemBERTa model for regression on SMILES data with one target value.
@@ -206,6 +304,7 @@ def train_chemberta_model(
         df_test: Test dataframe containing SMILES and target
         scaler: scaler used for normalization
         device: PyTorch device (optional)
+        evaluate_after_training: Whether to evaluate on test set after training (default: True)
 
     Returns:
         dict: Results including model, metrics, predictions, etc.
@@ -219,7 +318,6 @@ def train_chemberta_model(
     smiles_col = args.smiles_column
     target_col = args.target_column
 
-    # Create datasets
     texts_train = df_train[smiles_col].tolist()
     targets_train = df_train[target_col].values.astype(np.float32)
 
@@ -229,7 +327,6 @@ def train_chemberta_model(
     train_dataset = ChembertaDataset(texts_train, targets_train, tokenizer)
     test_dataset = ChembertaDataset(texts_test, targets_test, tokenizer)
 
-    # Create model
     model = ChembertaRegressor(
         pretrained=DEFAULT_PRETRAINED_NAME,
         dropout=args.dropout,
@@ -237,41 +334,34 @@ def train_chemberta_model(
         num_mlp_layers=args.num_mlp_layers,
     )
 
-    # Setup training arguments
     dataset_name = os.path.splitext(os.path.basename(args.train_csv))[0]
     output_dir = os.path.join(args.output_dir, dataset_name, "chemberta")
     os.makedirs(output_dir, exist_ok=True)
-    evaluation_strategy = "no"
-    save_strategy = "epoch"
-    load_best_model_at_end = False
 
-    # Training arguments
     training_args = TrainingArguments(
         output_dir=output_dir,
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
-        eval_strategy=evaluation_strategy,
-        save_strategy=save_strategy,
+        eval_strategy="no",
+        save_strategy="epoch",
         save_total_limit=1,
         learning_rate=args.lr,
         weight_decay=args.l2_lambda,
-        load_best_model_at_end=load_best_model_at_end,
+        load_best_model_at_end=False,
         metric_for_best_model="loss",
         greater_is_better=False,
         logging_strategy="epoch",
         logging_first_step=True,
         seed=args.random_seed,
-        report_to="none",  # Disable wandb reports
+        report_to="none", 
     )
 
-    # Create compute_metrics function
     compute_metrics = get_compute_metrics_fn(
         scaler=scaler,
         target_column=target_col,
     )
 
-    # Initialize trainer
     trainer = L1Trainer(
         model=model,
         args=training_args,
@@ -280,38 +370,12 @@ def train_chemberta_model(
         l1_lambda=args.l1_lambda,
     )
 
-    # Train model
     print("\nTraining ChemBERTa model...")
     start_time = datetime.now()
     train_result = trainer.train()
     training_time = (datetime.now() - start_time).total_seconds()
     print(f"Training completed in {training_time:.2f} seconds")
 
-    # Evaluate model
-    print("\nEvaluating model on test set...")
-    metrics = trainer.evaluate(eval_dataset=test_dataset)
-
-    # Generate predictions for plotting
-    predictions_output = trainer.predict(test_dataset)
-    preds = predictions_output.predictions.squeeze(-1)
-    labels = predictions_output.label_ids
-    orig_preds = inverse_transform(preds, scaler)
-    orig_labels = inverse_transform(labels, scaler)
-
-    print(f"\nModel parameters:")
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"  Total parameters: {total_params:,}")
-    print(f"  Trainable parameters: {trainable_params:,}")
-
-    plot_predictions_vs_targets(
-        predictions=orig_preds,
-        targets=orig_labels,
-        output_path=output_dir,
-        output_filename="preds_vs_targets.pdf",
-    )
-
-    # Save model
     trainer.save_model(output_dir)
     tokenizer.save_pretrained(output_dir)
     AutoConfig.from_pretrained(DEFAULT_PRETRAINED_NAME).save_pretrained(output_dir)
@@ -320,11 +384,10 @@ def train_chemberta_model(
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
 
-    # Save hyperparameters
     hyperparams = {
         "hidden_channels": args.hidden_channels,
         "lr": args.lr,
-        "l2_lambda": args.l2_lambda,  # Changed from weight_decay to l2_lambda for consistency
+        "l2_lambda": args.l2_lambda,
         "l1_lambda": args.l1_lambda,
         "batch_size": args.batch_size,
         "dropout": args.dropout,
@@ -335,7 +398,6 @@ def train_chemberta_model(
     with open(hyperparams_path, "w") as f:
         json.dump(hyperparams, f, indent=2)
 
-    # Save normalization scaler for later use in interpretability analysis
     if scaler is not None:
         scaler_path = os.path.join(output_dir, "normalization_scaler.pkl")
         
@@ -343,32 +405,38 @@ def train_chemberta_model(
             pickle.dump(scaler, f)
         print(f"Normalization scaler saved to {scaler_path}")
 
-    complete_results = {
-        "model": model,
-        "trainer": trainer,
-        "metrics": metrics,
-        "predictions": orig_preds,
-        "targets": orig_labels,
-        "history": trainer.state.log_history,
-        "training_time": training_time,
-        "output_dir": output_dir,
-        "hyperparams": hyperparams,
-    }
+    eval_results = None
+    if evaluate_after_training:
+        print("Evaluating model on test set...")
+        eval_results = evaluate_chemberta_model(
+            model=model,
+            dataset=test_dataset,
+            scaler=scaler,
+            target_column=target_col,
+            output_dir=output_dir,
+            trainer=trainer,
+            batch_size=args.batch_size,
+            plot_filename="preds_vs_targets.pdf",
+        )
 
-    json_serializable_results = {
-        "metrics": metrics,
-        "predictions": orig_preds.tolist() if hasattr(orig_preds, 'tolist') else list(orig_preds),
-        "targets": orig_labels.tolist() if hasattr(orig_labels, 'tolist') else list(orig_labels),
+    results = {
         "history": trainer.state.log_history,
         "training_time": training_time,
         "output_dir": output_dir,
         "hyperparams": hyperparams,
     }
+    
+    if eval_results:
+        results.update({
+            "metrics": eval_results["metrics"],
+            "predictions": eval_results["predictions"].tolist() if hasattr(eval_results["predictions"], 'tolist') else list(eval_results["predictions"]),
+            "targets": eval_results["targets"].tolist() if hasattr(eval_results["targets"], 'tolist') else list(eval_results["targets"]),
+        })
 
     complete_results_path = os.path.join(output_dir, "all_results.json")
     with open(complete_results_path, "w") as f:
-        json.dump(json_serializable_results, f, indent=2)
+        json.dump(results, f, indent=2)
         
-    return complete_results
+    return results
 
 
