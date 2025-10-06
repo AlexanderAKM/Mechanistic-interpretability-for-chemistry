@@ -151,9 +151,20 @@ hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler = load_che
 print(hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler)
 
 # %%
-full_data = pd.read_csv("../data/hce.csv")
-full_data.shape[0] / 80 * 100
+from utils.normalizing import normalize_csv
+full_data = pd.read_csv("../data/qm9.csv")
+full_data = full_data.drop(columns=[column for column in full_data.columns.to_list() if column not in ["smiles", "g298_atom"]])
+full_data_norm, _ = normalize_csv(full_data, TARGET_COLUMN, scaler, fit_scaler=False)
 
+from utils.chemberta_workflows import evaluate_chemberta_model
+evaluate_chemberta_model(
+    model=hf_regressor, 
+    dataset=full_data_norm, 
+    scaler=scaler, 
+    target_column=TARGET_COLUMN, 
+    output_dir="../results/qm9/evaluate",
+    tokenizer=tokenizer
+)
 # %% [markdown]
 # Validating conversation (check whether the two models have the same internals and output, extremely important!)
 # First check internal and then output
@@ -230,6 +241,22 @@ hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler = load_che
     MODEL_PATH, TOKENIZER_NAME, DEVICE, SCALER_PATH, train_data=train_data
 )
 print(hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler)
+
+# %%
+from utils.normalizing import normalize_csv
+full_data = pd.read_csv("../data/hce.csv")
+full_data = full_data.drop(columns=[column for column in full_data.columns.to_list() if column not in ["smiles", "pce_1"]])
+full_data_norm, _ = normalize_csv(full_data, TARGET_COLUMN, scaler, fit_scaler=False)
+
+from utils.chemberta_workflows import evaluate_chemberta_model
+evaluate_chemberta_model(
+    model=hf_regressor, 
+    dataset=full_data_norm, 
+    scaler=scaler, 
+    target_column=TARGET_COLUMN, 
+    output_dir="../results/hce/evaluate",
+    tokenizer=tokenizer
+)
 # %% [markdown]
 # Validating conversation (check whether the two models have the same internals and output, extremely important!)
 # First check internal and then output
