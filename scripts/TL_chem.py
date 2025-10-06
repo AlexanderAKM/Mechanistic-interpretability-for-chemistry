@@ -212,11 +212,11 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("../results/
 # }
 
 # With clustering
-molecule_groups = cluster(train_data)
+molecule_groups = cluster(full_data)
 
 
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
-plot_group_molecules_regression_lens(group_results, results_dir=Path("../results/qm9/regression_lens"))
+plot_group_molecules_regression_lens(group_results, results_dir=Path("../results/qm9/full_data_regression_lens"))
 
 # %%
 import pickle
