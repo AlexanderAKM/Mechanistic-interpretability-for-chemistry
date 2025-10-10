@@ -46,6 +46,11 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SCALER_PATH = "../trained_models/train_ESOL/chemberta/normalization_scaler.pkl"
 TARGET_COLUMN = "measured log solubility in mols per litre"
 print(DEVICE)
+
+# %%
+data = pd.read_csv("../data/hce.csv")
+clustered_data = cluster(data, n_clusters=10)
+clustered_data
 # %%
 train_data = pd.read_csv(TRAIN_PATH)
 hf_encoder, tl_encoder, tokenizer, hf_regressor, tl_regressor, scaler = load_chemberta_models(
