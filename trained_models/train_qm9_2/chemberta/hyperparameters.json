@@ -1,0 +1,10 @@
+{
+  "hidden_channels": 128,
+  "lr": 0.001,
+  "l2_lambda": 0.01,
+  "l1_lambda": 0.0,
+  "batch_size": 16,
+  "dropout": 0.3,
+  "num_mlp_layers": 1,
+  "epochs": 20
+}

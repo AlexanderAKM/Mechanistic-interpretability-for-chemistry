@@ -293,7 +293,7 @@ def evaluate_chemberta_model(
 
 
 def train_chemberta_model(
-    args, df_train, df_test, scaler, device=None, evaluate_after_training=True
+    args, df_train, df_test, scaler, device=None, evaluate_after_training=True, dataset_name=None
 ):
     """
     Train a ChemBERTa model for regression on SMILES data with one target value.
@@ -305,6 +305,7 @@ def train_chemberta_model(
         scaler: scaler used for normalization
         device: PyTorch device (optional)
         evaluate_after_training: Whether to evaluate on test set after training (default: True)
+        dataset_name: name of the dataset
 
     Returns:
         dict: Results including model, metrics, predictions, etc.
@@ -334,7 +335,9 @@ def train_chemberta_model(
         num_mlp_layers=args.num_mlp_layers,
     )
 
-    dataset_name = os.path.splitext(os.path.basename(args.train_csv))[0]
+    if not dataset_name:
+        dataset_name = os.path.splitext(os.path.basename(args.train_csv))[0]
+
     output_dir = os.path.join(args.output_dir, dataset_name, "chemberta")
     os.makedirs(output_dir, exist_ok=True)
 
