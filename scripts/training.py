@@ -10,6 +10,7 @@ from utils.chemberta_workflows import train_chemberta_model
 # %%
 RANDOM_SEED = 19237
 # %%
+# FOR ESOL
 
 # Make an args parser
 esol_defaults = {
