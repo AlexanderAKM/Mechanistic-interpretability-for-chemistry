@@ -101,6 +101,10 @@ def run_evaluation_metrics(model, test_data, tokenizer,
     
     device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     
+    # Enable cuDNN autotuning for faster GPU operations
+    if device.type == 'cuda':
+        torch.backends.cudnn.benchmark = True
+    
     # Load test data smiles and targets
     texts = test_data[smiles_column].tolist()
     labels = test_data[target_column].astype("float32").values
@@ -120,7 +124,7 @@ def run_evaluation_metrics(model, test_data, tokenizer,
     labels_norm = (labels - mean) / std
     
     ds = ChembertaDataset(texts, labels_norm, tokenizer, features=None)
-    loader = DataLoader(ds, batch_size=batch_size)
+    loader = DataLoader(ds, batch_size=batch_size, num_workers=2, pin_memory=True if device.type == 'cuda' else False)
     
     # Run evaluation
     preds, lbls = [], []
@@ -130,9 +134,11 @@ def run_evaluation_metrics(model, test_data, tokenizer,
             attention_mask = batch["attention_mask"].to(device)
             y = batch["labels"].to(device)
             
-            y_hat = model(ids, attention_mask)
-            if not use_tl_model:
-                y_hat = y_hat.logits.squeeze(-1)
+            # Use automatic mixed precision for faster inference on GPU
+            with torch.cuda.amp.autocast(enabled=device.type == 'cuda'):
+                y_hat = model(ids, attention_mask)
+                if not use_tl_model:
+                    y_hat = y_hat.logits.squeeze(-1)
 
             preds.append(y_hat.cpu())
             lbls.append(y.cpu())

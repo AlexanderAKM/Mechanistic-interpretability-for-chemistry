@@ -160,20 +160,24 @@ def run_ablation_analysis_with_metrics(
         output_dir: Optional[Path] = Path("results"),
         display_denormalized: bool = True,
         scaler = None,
+        batch_size: int = 128,
 ) -> Dict:
     """Run comprehensive ablation analysis using proper evaluation metrics.
     
     Args:
         tl_model: TransformerLens model to analyze
-        regressor: Original regressor for comparison
-        test_molecules: Molecules to test on
-        true_targets: True target values for the molecules
+        tl_regressor: Original regressor for comparison
         tokenizer: Tokenizer for the model
+        test_data: Test dataset DataFrame
+        smiles_column: Name of SMILES column
+        target_column: Name of target column
         ablation_percentages: List of ablation percentages to test
         n_seeds: Number of random seeds to average over
         device: Device to use for computation
         output_dir: Directory to save results
         display_denormalized: If True, show results in original scale
+        scaler: Scaler for normalization
+        batch_size: Batch size for evaluation (default: 256, increase for speed)
         
     Returns:
         Dictionary with comprehensive ablation results including metrics
@@ -198,7 +202,8 @@ def run_ablation_analysis_with_metrics(
                                               smiles_column=smiles_column,
                                               target_column=target_column,
                                               use_tl_model=True,
-                                              scaler=scaler)
+                                              scaler=scaler,
+                                              batch_size=batch_size)
 
     results = {
         "baseline": baseline_results,
@@ -241,6 +246,7 @@ def run_ablation_analysis_with_metrics(
                 target_column,
                 use_tl_model=True,
                 scaler=scaler,
+                batch_size=batch_size,
             )
             pct_results.append(eval_results)
 
@@ -291,6 +297,7 @@ def run_ablation_analysis_with_metrics(
                 target_column,
                 use_tl_model=True,
                 scaler=scaler,
+                batch_size=batch_size,
             )
             pct_results.append(eval_results)
 
@@ -345,6 +352,7 @@ def run_ablation_analysis_with_metrics(
                 target_column,
                 use_tl_model=True,
                 scaler=scaler,
+                batch_size=batch_size,
             )
             pct_results.append(eval_results)
 
