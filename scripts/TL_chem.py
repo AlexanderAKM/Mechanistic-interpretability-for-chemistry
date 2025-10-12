@@ -18,13 +18,11 @@ import torch
 import pandas as pd
 import os
 import sys
-import importlib
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.tl_conversion import load_chemberta_models
 from utils.tl_validation import validate_conversion, test_prediction_equivalence
-import utils.tl_ablation
 from utils.tl_ablation import run_ablation_analysis_with_metrics, plot_ablation_metrics
 from utils.tl_regression import run_regression_lens, plot_individual_molecules_regression_lens
 from utils.tl_regression import compare_molecule_groups_regression_lens, plot_group_molecules_regression_lens
@@ -142,7 +140,7 @@ targets = test_data[TARGET_COLUMN].to_list()
 print(f"Testing ablation on {len(test_molecules)} molecules")
 print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 
-results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path(f"results/qm9"), n_seeds=10, scaler=scaler)
+results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path("results/qm9"), n_seeds=10, scaler=scaler)
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest and smallest target value to showcase the technique
