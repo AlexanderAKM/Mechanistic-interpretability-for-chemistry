@@ -135,7 +135,7 @@ def run_evaluation_metrics(model, test_data, tokenizer,
             y = batch["labels"].to(device)
             
             # Use automatic mixed precision for faster inference on GPU
-            with torch.cuda.amp.autocast(enabled=device.type == 'cuda'):
+            with torch.amp.autocast('cuda', enabled=device.type == 'cuda'):
                 y_hat = model(ids, attention_mask)
                 if not use_tl_model:
                     y_hat = y_hat.logits.squeeze(-1)
