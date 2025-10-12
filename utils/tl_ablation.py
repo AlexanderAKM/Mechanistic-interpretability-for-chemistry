@@ -184,6 +184,10 @@ def run_ablation_analysis_with_metrics(
     """
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     
+    # Enable memory-efficient settings
+    if device == "cuda":
+        torch.cuda.empty_cache()
+    
     if ablation_percentages is None:
         ablation_percentages = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
