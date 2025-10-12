@@ -214,7 +214,7 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("results/hce
 
 # %% 
 
-group_results = {f"Cluster {cluster}": group['smiles'].to_list() for group, cluster in full_data.groupby('cluster')}
+group_results = {f"Cluster {cluster}": group['smiles'].tolist() for cluster, group in full_data.groupby('cluster')}
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
 plot_group_molecules_regression_lens(group_results, results_dir=Path("results/hce/regression_lens"))
 
@@ -223,7 +223,3 @@ plot_group_molecules_regression_lens(group_results, results_dir=Path("results/hc
 # %%
 
 # TODO: activation patching, see thesis repo
-
-# %%
-
-# %%
