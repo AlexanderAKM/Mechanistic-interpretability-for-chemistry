@@ -71,6 +71,15 @@ print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 esol_results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path("results/esol"), n_seeds=10, scaler=scaler)
 plot_ablation_metrics(esol_results, Path("results/esol"))
 
+# %%
+import pickle
+
+# Load saved ablation results
+with open("results/esol/ablation/all_results.pkl", "rb") as f:
+    esol_results = pickle.load(f)
+    
+plot_ablation_metrics(esol_results, Path("results/esol"))
+
 # %% [markdown]
 # We move on to regression lens
 # We pick the molecules with the largest, smallest, and median target value to showcase the technique

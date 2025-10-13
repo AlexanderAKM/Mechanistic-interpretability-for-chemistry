@@ -145,17 +145,19 @@ def compare_molecule_groups_regression_lens(
 def plot_individual_molecules_regression_lens(
         results: dict,
         results_dir: str = "results/regression_lens",
+        x_axis_labels: list = ["After Embedding \n Layer", "After Transformer \n Layer 1", "After Transformer \n Layer 2", "After Transformer \n Layer 3"],
+        molecule_labels: list = ["Molecule 0", "Molecule 1", "Molecule 2"],
+        y_label: str = "Log Solubility"
 ):
     os.makedirs(results_dir, exist_ok=True)
 
     plt.figure(figsize=(12, 8))
     
     for i, (smile, smile_results) in enumerate(results.items()):
-        plt.plot(range(len(smile_results)), smile_results.values(), 'o-', alpha=0.7, label=f"Molecule {i+1}")
+        plt.plot(range(len(smile_results)), smile_results.values(), 'o-', alpha=0.7, label=molecule_labels[i])
     print(results)
-    #plt.xlabel('Layer', fontsize=16)
-    plt.ylabel("Log Solubility", fontsize=16)
-    plt.xticks(range(len(smile_results)), ["After Embedding Layer", "After Transformer Layer 1", "After Transformer Layer 2", "After Transformer Layer 3"], rotation=45, fontsize=14)
+    plt.ylabel(y_label, fontsize=16)
+    plt.xticks(range(len(smile_results)), x_axis_labels, rotation=45, fontsize=14)
     plt.yticks(fontsize=14)
     plt.grid(True, alpha=0.3)
     plt.legend(loc='upper left', fontsize=16)
@@ -167,6 +169,10 @@ def plot_individual_molecules_regression_lens(
 def plot_group_molecules_regression_lens(
         results: dict,
         results_dir: str = "results/regression_lens",
+        x_axis_labels: list = ["After Embedding \n Layer", "After Transformer \n Layer 1", "After Transformer \n Layer 2", "After Transformer \n Layer 3"],
+        mean_y_label: str = "Mean Log Solubility",
+        var_y_label: str = "Variance Log Solubility"
+
 ):
     os.makedirs(results_dir, exist_ok=True)
 
@@ -180,9 +186,8 @@ def plot_group_molecules_regression_lens(
         mean_values = [group_data["mean"][layer] for layer in layer_names]
         plt.plot(range(len(layer_names)), mean_values, 'o-', alpha=0.8, label=group_name)
 
-    plt.xlabel('Layer', fontsize=16)
-    plt.ylabel("Mean Prediction", fontsize=16)
-    plt.xticks(range(len(layer_names)), layer_names, rotation=45, fontsize=14)
+    plt.ylabel(mean_y_label, fontsize=16)
+    plt.xticks(range(len(layer_names)), x_axis_labels, rotation=45, fontsize=14)
     plt.yticks(fontsize=14)
     plt.grid(True, alpha=0.3)
     plt.legend(loc='upper left', fontsize=12)
@@ -190,18 +195,17 @@ def plot_group_molecules_regression_lens(
     plt.savefig(Path(results_dir) / "group_means.pdf", dpi=300, bbox_inches="tight")
     plt.close()
 
-    # Plot group standard deviations
+    # Plot group variances
     plt.figure(figsize=(12, 8))
     for group_name, group_data in results.items():
         std_values = [group_data["variance"][layer] for layer in layer_names]
         plt.plot(range(len(layer_names)), std_values, 'o-', alpha=0.8, label=group_name)
 
-    plt.xlabel('Layer', fontsize=16)
-    plt.ylabel("Prediction Variance", fontsize=16)
-    plt.xticks(range(len(layer_names)), layer_names, rotation=45, fontsize=14)
+    plt.ylabel(var_y_label, fontsize=16)
+    plt.xticks(range(len(layer_names)), x_axis_labels, rotation=45, fontsize=14)
     plt.yticks(fontsize=14)
     plt.grid(True, alpha=0.3)
     plt.legend(loc='upper left', fontsize=12)
     plt.tight_layout()
-    plt.savefig(Path(results_dir) / "group_stds.pdf", dpi=300, bbox_inches="tight")
+    plt.savefig(Path(results_dir) / "group_vars.pdf", dpi=300, bbox_inches="tight")
     plt.close()

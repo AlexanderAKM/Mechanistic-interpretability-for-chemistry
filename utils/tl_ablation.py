@@ -488,16 +488,30 @@ def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
     attention_r2_ci = [std * ci_multiplier for std in attention_r2_std]
     combined_r2_ci = [std * ci_multiplier for std in combined_r2_std]
     
-    # Plot with more distinct confidence intervals and better colors
-    ax2.errorbar(ablation_pcts, mlp_r2, yerr=mlp_r2_ci, fmt='o-', label='FFN Ablation', 
-                linewidth=3, markersize=8, capsize=5, capthick=2, elinewidth=2, alpha=0.9,
-                color='#1f77b4')  # Blue
-    ax2.errorbar(ablation_pcts, attention_r2, yerr=attention_r2_ci, fmt='s-', label='Attention Head Ablation', 
-                linewidth=3, markersize=8, capsize=5, capthick=2, elinewidth=2, alpha=0.9,
-                color='#ff7f0e')  # Orange  
-    ax2.errorbar(ablation_pcts, combined_r2, yerr=combined_r2_ci, fmt='^-', label='Combined Ablation', 
-                linewidth=3, markersize=8, capsize=5, capthick=2, elinewidth=2, alpha=0.9,
-                color='#d62728')  # Red
+    # Plot with shaded confidence intervals
+    # MLP ablation
+    ax2.plot(ablation_pcts, mlp_r2, 'o-', label='FFN Ablation', 
+            linewidth=3, markersize=8, color='#1f77b4')
+    ax2.fill_between(ablation_pcts, 
+                     np.array(mlp_r2) - np.array(mlp_r2_ci), 
+                     np.array(mlp_r2) + np.array(mlp_r2_ci),
+                     alpha=0.3, color='#1f77b4')
+    
+    # Attention ablation
+    ax2.plot(ablation_pcts, attention_r2, 's-', label='Attention Head Ablation', 
+            linewidth=3, markersize=8, color='#ff7f0e')
+    ax2.fill_between(ablation_pcts,
+                     np.array(attention_r2) - np.array(attention_r2_ci),
+                     np.array(attention_r2) + np.array(attention_r2_ci),
+                     alpha=0.3, color='#ff7f0e')
+    
+    # Combined ablation  
+    ax2.plot(ablation_pcts, combined_r2, '^-', label='Combined Ablation', 
+            linewidth=3, markersize=8, color='#d62728')
+    ax2.fill_between(ablation_pcts,
+                     np.array(combined_r2) - np.array(combined_r2_ci),
+                     np.array(combined_r2) + np.array(combined_r2_ci),
+                     alpha=0.3, color='#d62728')
     
     ax2.set_xlabel('Ablation Percentage (%)', fontsize=16)
     ax2.set_ylabel(f'R² Score', fontsize=16)
