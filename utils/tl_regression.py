@@ -34,8 +34,9 @@ def run_regression_lens(
         smiles: List[str],
         tokenizer: RobertaTokenizerFast,
         device: Optional[str] = None,
+        batch_size: int = 32,
 ) -> Dict:
-    """Run regression lens analysis for one or more molecules.
+    """Run regression lens analysis for one or more molecules (batched for efficiency).
     
     Applies the readout layer after each transformer block to see what
     the model would predict based on representations at each layer.
@@ -43,9 +44,11 @@ def run_regression_lens(
     Args:
         tl_model: TransformerLens encoder model
         regressor: Full regressor with MLP head for readout
-        smiles: SMILES string of molecule to analyze
+        scaler: Scaler for denormalization
+        smiles: List of SMILES strings to analyze
         tokenizer: Tokenizer for the model
         device: Device to use for computation
+        batch_size: Number of molecules to process at once (default: 32)
         
     Returns:
         Dictionary with layer-wise predictions for each molecule
@@ -53,38 +56,40 @@ def run_regression_lens(
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
     results = {}
-
-    for smile in smiles:
-        inputs = tokenizer(smile, return_tensors="pt").to(device)
-        tokens = tokenizer.tokenize(smile)
-
-        result = {}
+    
+    # Process in batches for efficiency
+    for batch_start in range(0, len(smiles), batch_size):
+        batch_smiles = smiles[batch_start:batch_start + batch_size]
+        
+        # Tokenize batch
+        inputs = tokenizer(batch_smiles, return_tensors="pt", padding=True, truncation=True).to(device)
         
         with torch.no_grad():
+            # Run model with cache for entire batch
             _, cache = tl_model.run_with_cache(
                 inputs["input_ids"],
                 one_zero_attention_mask=inputs["attention_mask"]
             )
 
-            layer_predictions = []
+            # Process each molecule in batch
+            for batch_idx, smile in enumerate(batch_smiles):
+                result = {}
+                
+                for layer in range(tl_model.cfg.n_layers + 1):
+                    if layer == 0:
+                        # After embedding but before any transformer blocks
+                        representation = cache["hook_full_embed"][batch_idx, 0, :]
+                        layer_name = "Embedding"
+                    else:
+                        representation = cache[f"blocks.{layer-1}.hook_normalized_resid_post"][batch_idx, 0, :]
+                        layer_name = f"{layer}"
+                
+                    norm_prediction = regressor.mlp_head(representation).squeeze().item()
+                    prediction = norm_prediction * scaler.scale_[0] + scaler.mean_[0]
 
-            for layer in range(tl_model.cfg.n_layers + 1):
-                if layer == 0:
-                    # After embedding but before any transformer blocks
-                    representation = cache["hook_full_embed"][0, 0, :]
-                    layer_name = "Embedding"
-                    cache_key = "hook_full_embed"
-                else:
-                    representation = cache[f"blocks.{layer-1}.hook_normalized_resid_post"][0, 0, :]
-                    layer_name = f"{layer}"
-            
-                norm_prediction = regressor.mlp_head(representation).squeeze().item()
-                prediction = norm_prediction * scaler.scale_[0] + scaler.mean_[0]
-                layer_predictions.append(prediction)
+                    result[layer_name] = prediction
 
-                result[layer_name] = prediction
-
-        results[smile] = result
+                results[smile] = result
     
     return results
 
@@ -95,8 +100,9 @@ def compare_molecule_groups_regression_lens(
         group_smiles: Dict,
         tokenizer: RobertaTokenizerFast,
         device: Optional[str] = None,
+        batch_size: int = 64,
 ) -> Dict:
-    """Run regression lens analysis for one or more molecule groups.
+    """Run regression lens analysis for one or more molecule groups (batched).
     
     Applies the readout layer after each transformer block to see what
     the model would predict based on representations at each layer.
@@ -104,17 +110,20 @@ def compare_molecule_groups_regression_lens(
     Args:
         tl_model: TransformerLens encoder model
         regressor: Full regressor with MLP head for readout
-        smiles: SMILES string of molecule to analyze
+        scaler: Scaler for denormalization
+        group_smiles: Dictionary mapping group names to lists of SMILES
         tokenizer: Tokenizer for the model
         device: Device to use for computation
+        batch_size: Number of molecules to process at once (default: 64)
         
     Returns:
-        Dictionary with layer-wise predictions for each molecule
+        Dictionary with layer-wise predictions for each molecule group
     """
     results = {}
 
     for group, smiles in group_smiles.items():
-        group_results = run_regression_lens(tl_model, regressor, scaler, smiles, tokenizer)
+        print(f"Processing {group}: {len(smiles)} molecules...")
+        group_results = run_regression_lens(tl_model, regressor, scaler, smiles, tokenizer, device, batch_size)
         results[group] = group_results
 
         # Compute per-layer mean and std across all molecules in the group

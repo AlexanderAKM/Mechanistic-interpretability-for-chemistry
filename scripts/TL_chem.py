@@ -101,14 +101,14 @@ plot_group_molecules_regression_lens(group_results, results_dir=Path("results/es
 
 # %% 
 # Now for **qm9 dataset**
-MODEL_PATH = "trained_models/train_qm9_5/chemberta/chemberta_model_final.bin"
+MODEL_PATH = "trained_models/train_qm9_1/chemberta/chemberta_model_final.bin"
 FULL_PATH = "clustered_data/qm9/qm9.csv"
 TEST_PATH = "clustered_data/qm9/test_qm9.csv"
 TRAIN_PATH = "clustered_data/qm9/train_qm9.csv"
 TOKENIZER_NAME = "DeepChem/ChemBERTa-77M-MLM"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-SCALER_PATH = "trained_models/train_qm9_5/chemberta/normalization_scaler.pkl"
+SCALER_PATH = "trained_models/train_qm9_1/chemberta/normalization_scaler.pkl"
 TARGET_COLUMN = "dga"
 print(DEVICE)
 # %%
@@ -148,14 +148,14 @@ results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer
 min_max_molecules = [full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0], full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0]]
 
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_molecules, tokenizer)
-plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9/example_regression_lens"))
+plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9_1/example_regression_lens"))
 
 # %% 
 molecule_groups = {f"Cluster {cluster}": group['smiles'].tolist() 
                    for cluster, group in full_data.groupby('cluster')}
 
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
-plot_group_molecules_regression_lens(group_results, results_dir=Path("results/qm9/regression_lens"))
+plot_group_molecules_regression_lens(group_results, results_dir=Path("results/qm9_1/regression_lens"))
 
 # %%
 # Now for **hce dataset**
