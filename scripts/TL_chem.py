@@ -73,11 +73,18 @@ plot_ablation_metrics(esol_results, Path("results/esol"))
 
 # %% [markdown]
 # We move on to regression lens
-# We pick the molecules with the largest and smallest target value to showcase the technique
+# We pick the molecules with the largest, smallest, and median target value to showcase the technique
 # on the training data
-min_max_molecules = [full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0], full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0]]
+median_idx = len(full_data) // 2
+median_molecule = full_data.sort_values(TARGET_COLUMN).iloc[median_idx]["smiles"]
+min_max_median_molecules = [
+    full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # max
+    median_molecule,  # median
+    full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # min
+]
 
-results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_molecules, tokenizer)
+results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
+print(results)
 plot_individual_molecules_regression_lens(results, results_dir=Path("results/esol/example_regression_lens"))
 # %% [markdown]
 # Now we do regression lens on groups of molecules
@@ -143,11 +150,17 @@ print(f"Target range: {min(targets):.3f} to {max(targets):.3f}")
 results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer, test_data, target_column=TARGET_COLUMN, output_dir=Path("results/qm9"), n_seeds=10, scaler=scaler)
 # %% [markdown]
 # We move on to regression lens
-# We pick the molecules with the largest and smallest target value to showcase the technique
+# We pick the molecules with the largest, smallest, and median target value to showcase the technique
 # on the training data
-min_max_molecules = [full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0], full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0]]
+median_idx = len(full_data) // 2
+median_molecule = full_data.sort_values(TARGET_COLUMN).iloc[median_idx]["smiles"]
+min_max_median_molecules = [
+    full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # max
+    full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # min
+    median_molecule  # median
+]
 
-results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_molecules, tokenizer)
+results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
 plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9_1/example_regression_lens"))
 
 # %% 
@@ -203,11 +216,17 @@ results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer
 plot_ablation_metrics(results, Path("results/hce"))
 # %% 
 # We move on to regression lens
-# We pick the molecules with the largest and smallest target value to showcase the technique
+# We pick the molecules with the largest, smallest, and median target value to showcase the technique
 # on the training data
-min_max_molecules = [full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0], full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0]]
+median_idx = len(full_data) // 2
+median_molecule = full_data.sort_values(TARGET_COLUMN).iloc[median_idx]["smiles"]
+min_max_median_molecules = [
+    full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # max
+    full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # min
+    median_molecule  # median
+]
 
-results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_molecules, tokenizer)
+results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
 plot_individual_molecules_regression_lens(results, results_dir=Path("results/hce/example_regression_lens"))
 
 # %% 

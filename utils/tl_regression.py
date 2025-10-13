@@ -151,11 +151,11 @@ def plot_individual_molecules_regression_lens(
     plt.figure(figsize=(12, 8))
     
     for i, (smile, smile_results) in enumerate(results.items()):
-        plt.plot(range(len(smile_results)), smile_results.values(), 'o-', alpha=0.7, label=smile)
-    
-    plt.xlabel('Layer', fontsize=16)
-    plt.ylabel("Prediction", fontsize=16)
-    plt.xticks(range(len(smile_results)), smile_results.keys(), rotation=45, fontsize=14)
+        plt.plot(range(len(smile_results)), smile_results.values(), 'o-', alpha=0.7, label=f"Molecule {i+1}")
+    print(results)
+    #plt.xlabel('Layer', fontsize=16)
+    plt.ylabel("Log Solubility", fontsize=16)
+    plt.xticks(range(len(smile_results)), ["After Embedding Layer", "After Transformer Layer 1", "After Transformer Layer 2", "After Transformer Layer 3"], rotation=45, fontsize=14)
     plt.yticks(fontsize=14)
     plt.grid(True, alpha=0.3)
     plt.legend(loc='upper left', fontsize=16)
