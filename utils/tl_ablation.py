@@ -427,7 +427,7 @@ def run_ablation_analysis_with_metrics(
     
     return results
 
-def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
+def plot_ablation_metrics(results: Dict, output_dir: Path, title: str = "ESOL") -> None:
     """Create individual PDF visualization plots for ablation analysis using evaluation metrics.
     
     Args:
@@ -461,6 +461,7 @@ def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
     ax1.plot(ablation_pcts, attention_mae, 's-', label='Attention Head Ablation', linewidth=3, markersize=8, color='#ff7f0e')
     ax1.plot(ablation_pcts, combined_mae, '^-', label='Combined Ablation', linewidth=3, markersize=8, color='#d62728')
     
+    ax1.set_title(title, fontsize=18)
     ax1.set_xlabel('Ablation Percentage (%)', fontsize=16)
     ax1.set_ylabel(f'Mean Absolute Error', fontsize=16)
     ax1.tick_params(axis='both', which='major', labelsize=14)
@@ -513,6 +514,7 @@ def plot_ablation_metrics(results: Dict, output_dir: Path) -> None:
                      np.array(combined_r2) + np.array(combined_r2_ci),
                      alpha=0.3, color='#d62728')
     
+    ax2.set_title(title, fontsize=18)
     ax2.set_xlabel('Ablation Percentage (%)', fontsize=16)
     ax2.set_ylabel(f'R² Score', fontsize=16)
     ax2.tick_params(axis='both', which='major', labelsize=14)
