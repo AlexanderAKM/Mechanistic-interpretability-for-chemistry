@@ -94,7 +94,7 @@ min_max_median_molecules = [
 
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
 print(results)
-plot_individual_molecules_regression_lens(results, results_dir=Path("results/esol/example_regression_lens"))
+plot_individual_molecules_regression_lens(results, results_dir=Path("results/esol/example_regression_lens"), molecule_labels = ["Molecule 1", "Molecule 2", "Molecule 3"])
 # %% [markdown]
 # Now we do regression lens on groups of molecules
 # First example group
@@ -161,23 +161,30 @@ results = run_ablation_analysis_with_metrics(tl_encoder, tl_regressor, tokenizer
 # We move on to regression lens
 # We pick the molecules with the largest, smallest, and median target value to showcase the technique
 # on the training data
+import pickle
+with open("results/qm9_1/ablation/all_results.pkl", "rb") as f:
+    qm9_results = pickle.load(f)
+    
+plot_ablation_metrics(qm9_results, Path("results/qm9_1"), title = "QM9")
+
+# %%
 median_idx = len(full_data) // 2
 median_molecule = full_data.sort_values(TARGET_COLUMN).iloc[median_idx]["smiles"]
 min_max_median_molecules = [
     full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # max
+    median_molecule, # median
     full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # min
-    median_molecule  # median
 ]
 
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
-plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9_1/example_regression_lens"))
+plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9_1/example_regression_lens"), molecule_labels = ["Molecule 4", "Molecule 5", "Molecule 6"], y_label = "Gibbs Free Energies of Atomization At 298K", title = "QM9")
 
 # %% 
 molecule_groups = {f"Cluster {cluster}": group['smiles'].tolist() 
                    for cluster, group in full_data.groupby('cluster')}
 
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
-plot_group_molecules_regression_lens(group_results, results_dir=Path("results/qm9_1/regression_lens"))
+plot_group_molecules_regression_lens(group_results, results_dir=Path("results/qm9_1/regression_lens"), mean_y_label = "Mean Gibbs Free Energies of Atomization At 298K", var_y_label = "Variance Gibbs Free Energies of Atomization At 298K", title = "QM9")
 
 # %%
 # Now for **hce dataset**
@@ -227,23 +234,30 @@ plot_ablation_metrics(results, Path("results/hce"))
 # We move on to regression lens
 # We pick the molecules with the largest, smallest, and median target value to showcase the technique
 # on the training data
+import pickle
+with open("results/hce/ablation/all_results.pkl", "rb") as f:
+    qm9_results = pickle.load(f)
+    
+plot_ablation_metrics(qm9_results, Path("results/hce"), title = "HCE")
+
+# %%
 median_idx = len(full_data) // 2
 median_molecule = full_data.sort_values(TARGET_COLUMN).iloc[median_idx]["smiles"]
 min_max_median_molecules = [
     full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # max
+    median_molecule, # median
     full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # min
-    median_molecule  # median
 ]
 
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
-plot_individual_molecules_regression_lens(results, results_dir=Path("results/hce/example_regression_lens"))
+plot_individual_molecules_regression_lens(results, results_dir=Path("results/hce/example_regression_lens"), molecule_labels = ["Molecule 7", "Molecule 8", "Molecule 9"], y_label = "Power Conversion Efficiency", title = "HCE")
 
 # %% 
+molecule_groups = {f"Cluster {cluster}": group['smiles'].tolist() 
+                   for cluster, group in full_data.groupby('cluster')}
 
-group_results = {f"Cluster {cluster}": group['smiles'].tolist() for cluster, group in full_data.groupby('cluster')}
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
-plot_group_molecules_regression_lens(group_results, results_dir=Path("results/hce/regression_lens"))
-
+plot_group_molecules_regression_lens(group_results, results_dir=Path("results/hce/regression_lens"), mean_y_label = "Mean Power Conversion Efficiency", var_y_label = "Variance Power Conversion Efficiency", title = "HCE")
 
 
 # %%
