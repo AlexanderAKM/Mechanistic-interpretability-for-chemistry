@@ -148,14 +148,38 @@ def plot_individual_molecules_regression_lens(
         x_axis_labels: list = ["After Embedding \n Layer", "After Transformer \n Layer 1", "After Transformer \n Layer 2", "After Transformer \n Layer 3"],
         molecule_labels: list = ["Molecule 0", "Molecule 1", "Molecule 2"],
         y_label: str = "Log Solubility",
-        title: str = "ESOL"
+        title: str = "ESOL",
+        actual_targets: Optional[List[float]] = None,
+        target_labels: Optional[List[str]] = None
 ):
+    """Plot regression lens results for individual molecules.
+    
+    Args:
+        results: Dictionary mapping SMILES to layer-wise predictions
+        results_dir: Directory to save the plot
+        x_axis_labels: Labels for x-axis (layers)
+        molecule_labels: Labels for each molecule
+        y_label: Label for y-axis
+        title: Plot title
+        actual_targets: Optional list of actual target values for each molecule (in same order as results)
+        target_labels: Optional list of labels for target types (e.g., ["max", "median", "min"])
+    """
     os.makedirs(results_dir, exist_ok=True)
 
     plt.figure(figsize=(12, 8))
     
+    # Plot predictions for each molecule
     for i, (smile, smile_results) in enumerate(results.items()):
-        plt.plot(range(len(smile_results)), smile_results.values(), 'o-', alpha=0.7, label=molecule_labels[i])
+        # Add target label if provided
+        label = molecule_labels[i]
+        if target_labels and i < len(target_labels):
+            label = f"{molecule_labels[i]} ({target_labels[i]})"
+        
+        plt.plot(range(len(smile_results)), smile_results.values(), 'o-', alpha=0.7, label=label)
+        
+        # Add dashed horizontal line for actual target value if provided
+        if actual_targets and i < len(actual_targets):
+            plt.axhline(y=actual_targets[i], color=f'C{i}', linestyle='--', alpha=0.5, linewidth=2)
 
     plt.title(title, fontsize=18)
     plt.ylabel(y_label, fontsize=16)

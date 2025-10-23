@@ -19,8 +19,6 @@ import pandas as pd
 import os
 import sys
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from utils.tl_conversion import load_chemberta_models
 from utils.tl_validation import validate_conversion, test_prediction_equivalence
 from utils.tl_ablation import run_ablation_analysis_with_metrics, plot_ablation_metrics
@@ -91,10 +89,17 @@ min_max_median_molecules = [
     median_molecule,  # median
     full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # min
 ]
+# Get actual target values for these molecules
+actual_targets = [
+    full_data.nlargest(1, TARGET_COLUMN)[TARGET_COLUMN].to_list()[0],  # max value
+    full_data.sort_values(TARGET_COLUMN).iloc[median_idx][TARGET_COLUMN],  # median value
+    full_data.nsmallest(1, TARGET_COLUMN)[TARGET_COLUMN].to_list()[0],  # min value
+]
+min_max_median_molecules
 
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
 print(results)
-plot_individual_molecules_regression_lens(results, results_dir=Path("results/esol/example_regression_lens"), molecule_labels = ["Molecule 1", "Molecule 2", "Molecule 3"])
+plot_individual_molecules_regression_lens(results, results_dir=Path("results/esol/example_regression_lens"), molecule_labels = ["Molecule 1", "Molecule 2", "Molecule 3"], actual_targets=actual_targets, target_labels=["maximum", "median", "minimum"])
 # %% [markdown]
 # Now we do regression lens on groups of molecules
 # First example group
@@ -175,9 +180,16 @@ min_max_median_molecules = [
     median_molecule, # median
     full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # min
 ]
+# Get actual target values for these molecules
+actual_targets = [
+    full_data.nlargest(1, TARGET_COLUMN)[TARGET_COLUMN].to_list()[0],  # max value
+    full_data.sort_values(TARGET_COLUMN).iloc[median_idx][TARGET_COLUMN],  # median value
+    full_data.nsmallest(1, TARGET_COLUMN)[TARGET_COLUMN].to_list()[0],  # min value
+]
+min_max_median_molecules
 
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
-plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9_1/example_regression_lens"), molecule_labels = ["Molecule 4", "Molecule 5", "Molecule 6"], y_label = "Gibbs Free Energies of Atomization At 298K", title = "QM9")
+plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9_1/example_regression_lens"), molecule_labels = ["Molecule 4", "Molecule 5", "Molecule 6"], y_label = "Gibbs Free Energies of Atomization At 298K", title = "QM9", actual_targets=actual_targets, target_labels=["maximum", "median", "minimum"])
 
 # %% 
 molecule_groups = {f"Cluster {cluster}": group['smiles'].tolist() 
@@ -248,9 +260,16 @@ min_max_median_molecules = [
     median_molecule, # median
     full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # min
 ]
+# Get actual target values for these molecules
+actual_targets = [
+    full_data.nlargest(1, TARGET_COLUMN)[TARGET_COLUMN].to_list()[0],  # max value
+    full_data.sort_values(TARGET_COLUMN).iloc[median_idx][TARGET_COLUMN],  # median value
+    full_data.nsmallest(1, TARGET_COLUMN)[TARGET_COLUMN].to_list()[0],  # min value
+]
+min_max_median_molecules
 
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
-plot_individual_molecules_regression_lens(results, results_dir=Path("results/hce/example_regression_lens"), molecule_labels = ["Molecule 7", "Molecule 8", "Molecule 9"], y_label = "Power Conversion Efficiency", title = "HCE")
+plot_individual_molecules_regression_lens(results, results_dir=Path("results/hce/example_regression_lens"), molecule_labels = ["Molecule 7", "Molecule 8", "Molecule 9"], y_label = "Power Conversion Efficiency", title = "HCE", actual_targets=actual_targets, target_labels=["maximum", "median", "minimum"])
 
 # %% 
 molecule_groups = {f"Cluster {cluster}": group['smiles'].tolist() 
