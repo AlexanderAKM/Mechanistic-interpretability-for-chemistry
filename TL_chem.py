@@ -113,10 +113,12 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("results/eso
 # plot_group_molecules_regression_lens(example_group_results, results_dir=Path("results/ESOL/example_regression_lens"))
 
 # With clustering
-molecule_groups = {f"Cluster {cluster}": group['smiles'].tolist() 
+molecule_groups = {f"Cluster {cluster + 1}": group['smiles'].tolist() 
                    for cluster, group in full_data.groupby('cluster')}
 
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
+for name, results in group_results.items():
+    print(name)
 plot_group_molecules_regression_lens(group_results, results_dir=Path("results/esol/regression_lens"))
 
 
@@ -192,7 +194,7 @@ results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_m
 plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9_1/example_regression_lens"), molecule_labels = ["Molecule 4", "Molecule 5", "Molecule 6"], y_label = "Gibbs Free Energies of Atomization At 298K", title = "QM9", actual_targets=actual_targets, target_labels=["maximum", "median", "minimum"])
 
 # %% 
-molecule_groups = {f"Cluster {cluster}": group['smiles'].tolist() 
+molecule_groups = {f"Cluster {cluster + 1}": group['smiles'].tolist() 
                    for cluster, group in full_data.groupby('cluster')}
 
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
@@ -272,7 +274,7 @@ results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_m
 plot_individual_molecules_regression_lens(results, results_dir=Path("results/hce/example_regression_lens"), molecule_labels = ["Molecule 7", "Molecule 8", "Molecule 9"], y_label = "Power Conversion Efficiency", title = "HCE", actual_targets=actual_targets, target_labels=["maximum", "median", "minimum"])
 
 # %% 
-molecule_groups = {f"Cluster {cluster}": group['smiles'].tolist() 
+molecule_groups = {f"Cluster {cluster + 1}": group['smiles'].tolist() 
                    for cluster, group in full_data.groupby('cluster')}
 
 group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
