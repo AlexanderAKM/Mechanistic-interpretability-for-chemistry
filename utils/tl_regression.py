@@ -205,12 +205,16 @@ def plot_group_molecules_regression_lens(
     # Determine layer order from the first group's mean dict
     first_group = next(iter(results.values()))
     layer_names = list(first_group["mean"].keys())
+    
+    # Set up color palette with enough colors for all groups
+    n_groups = len(results)
+    colors = sns.color_palette("tab20", n_colors=max(n_groups, 20))
 
     # Plot group means
     plt.figure(figsize=(12, 8))
-    for group_name, group_data in results.items():
+    for i, (group_name, group_data) in enumerate(results.items()):
         mean_values = [group_data["mean"][layer] for layer in layer_names]
-        plt.plot(range(len(layer_names)), mean_values, 'o-', alpha=0.8, label=group_name)
+        plt.plot(range(len(layer_names)), mean_values, 'o-', alpha=0.8, label=group_name, color=colors[i])
 
     plt.title(title, fontsize=18)
     plt.ylabel(mean_y_label, fontsize=16)
@@ -224,9 +228,9 @@ def plot_group_molecules_regression_lens(
 
     # Plot group variances
     plt.figure(figsize=(12, 8))
-    for group_name, group_data in results.items():
+    for i, (group_name, group_data) in enumerate(results.items()):
         std_values = [group_data["variance"][layer] for layer in layer_names]
-        plt.plot(range(len(layer_names)), std_values, 'o-', alpha=0.8, label=group_name)
+        plt.plot(range(len(layer_names)), std_values, 'o-', alpha=0.8, label=group_name, color=colors[i])
 
     plt.title(title, fontsize=18)
     plt.ylabel(var_y_label, fontsize=16)
