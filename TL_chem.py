@@ -116,9 +116,10 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("results/eso
 molecule_groups = {f"Cluster {cluster + 1}": group['smiles'].tolist() 
                    for cluster, group in full_data.groupby('cluster')}
 
-group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
-for name, results in group_results.items():
-    print(name)
+group_results = compare_molecule_groups_regression_lens(
+    tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, 
+    targets=full_data[TARGET_COLUMN].tolist(), results_dir="results/esol/regression_lens", device=DEVICE
+)
 plot_group_molecules_regression_lens(group_results, results_dir=Path("results/esol/regression_lens"))
 
 
@@ -197,7 +198,10 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9
 molecule_groups = {f"Cluster {cluster + 1}": group['smiles'].tolist() 
                    for cluster, group in full_data.groupby('cluster')}
 
-group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
+group_results = compare_molecule_groups_regression_lens(
+    tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer,
+    targets=full_data[TARGET_COLUMN].tolist(), results_dir="results/qm9_1/regression_lens", device=DEVICE
+)
 plot_group_molecules_regression_lens(group_results, results_dir=Path("results/qm9_1/regression_lens"), mean_y_label = "Mean Gibbs Free Energies of Atomization At 298K", var_y_label = "Variance Gibbs Free Energies of Atomization At 298K", title = "QM9")
 
 # %%
@@ -277,7 +281,10 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("results/hce
 molecule_groups = {f"Cluster {cluster + 1}": group['smiles'].tolist() 
                    for cluster, group in full_data.groupby('cluster')}
 
-group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, DEVICE)
+group_results = compare_molecule_groups_regression_lens(
+    tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer,
+    targets=full_data[TARGET_COLUMN].tolist(), results_dir="results/hce/regression_lens", device=DEVICE
+)
 plot_group_molecules_regression_lens(group_results, results_dir=Path("results/hce/regression_lens"), mean_y_label = "Mean Power Conversion Efficiency", var_y_label = "Variance Power Conversion Efficiency", title = "HCE")
 
 

@@ -19,6 +19,7 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import torch
 import transformer_lens as tl
@@ -99,6 +100,8 @@ def compare_molecule_groups_regression_lens(
         scaler,
         group_smiles: Dict,
         tokenizer: RobertaTokenizerFast,
+        targets: List[float],
+        results_dir: Optional[str] = None,
         device: Optional[str] = None,
         batch_size: int = 64,
 ) -> Dict:
@@ -113,18 +116,23 @@ def compare_molecule_groups_regression_lens(
         scaler: Scaler for denormalization
         group_smiles: Dictionary mapping group names to lists of SMILES
         tokenizer: Tokenizer for the model
+        targets: Optional list of actual target values (same order as concatenated smiles)
+        results_dir: Optional directory to save predictions CSV
         device: Device to use for computation
         batch_size: Number of molecules to process at once (default: 64)
         
     Returns:
-        Dictionary with layer-wise predictions for each molecule group
+        Dictionary with layer-wise predictions for each molecule group, 
+        plus 'variance_ratio' key with variance ratios if targets provided
     """
     results = {}
-
+    all_smiles_ordered = []
+    
     for group, smiles in group_smiles.items():
         print(f"Processing {group}: {len(smiles)} molecules...")
         group_results = run_regression_lens(tl_model, regressor, scaler, smiles, tokenizer, device, batch_size)
         results[group] = group_results
+        all_smiles_ordered.extend(smiles)
 
         # Compute per-layer mean and std across all molecules in the group
         layer_names = list(next(iter(group_results.values())).keys())
@@ -138,7 +146,31 @@ def compare_molecule_groups_regression_lens(
 
         results[group]["mean"] = means
         results[group]["variance"] = variances
+        
+    # Collect all predictions across all groups for each layer
+    all_predictions_by_layer = {}
+    for layer in layer_names:
+        all_preds = []
+        for group, smiles in group_smiles.items():
+            for smile in smiles:
+                all_preds.append(results[group][smile][layer])
+        all_predictions_by_layer[layer] = np.array(all_preds)
     
+    # Compute variance ratio
+    target_variance = np.var(targets)
+    variance_ratios = {}
+    for layer in layer_names:
+        pred_variance = np.var(all_predictions_by_layer[layer])
+        variance_ratios[layer] = pred_variance / target_variance
+    
+    results["target_variance"] = target_variance
+    results["variance_ratio"] = variance_ratios
+    print(f"Variance ratios by layer: {variance_ratios}")
+    
+    # Save predictions to CSV if directory provided
+    if results_dir is not None:
+        os.makedirs(results_dir, exist_ok=True)
+            
     return results
 
 
@@ -202,17 +234,18 @@ def plot_group_molecules_regression_lens(
 ):
     os.makedirs(results_dir, exist_ok=True)
 
-    # Determine layer order from the first group's mean dict
-    first_group = next(iter(results.values()))
+    # Determine layer order from the first group's mean dict (skip special keys like 'variance_ratio')
+    first_group = next(iter({k: v for k, v in results.items() if k != "variance_ratio" and k != "target_variance"}.values()))
     layer_names = list(first_group["mean"].keys())
     
-    # Set up color palette with enough colors for all groups
-    n_groups = len(results)
-    colors = sns.color_palette("tab20", n_colors=max(n_groups, 20))
+    # Set up continuous color palette for all groups (excluding special keys)
+    group_items = [(k, v) for k, v in results.items() if k != "variance_ratio" and k != "target_variance"]
+    n_groups = len(group_items)
+    colors = plt.cm.turbo(np.linspace(0, 1, n_groups))
 
     # Plot group means
     plt.figure(figsize=(12, 8))
-    for i, (group_name, group_data) in enumerate(results.items()):
+    for i, (group_name, group_data) in enumerate(group_items):
         mean_values = [group_data["mean"][layer] for layer in layer_names]
         plt.plot(range(len(layer_names)), mean_values, 'o-', alpha=0.8, label=group_name, color=colors[i])
 
@@ -228,7 +261,7 @@ def plot_group_molecules_regression_lens(
 
     # Plot group variances
     plt.figure(figsize=(12, 8))
-    for i, (group_name, group_data) in enumerate(results.items()):
+    for i, (group_name, group_data) in enumerate(group_items):
         std_values = [group_data["variance"][layer] for layer in layer_names]
         plt.plot(range(len(layer_names)), std_values, 'o-', alpha=0.8, label=group_name, color=colors[i])
 
@@ -241,3 +274,24 @@ def plot_group_molecules_regression_lens(
     plt.tight_layout()
     plt.savefig(Path(results_dir) / "group_vars.pdf", dpi=300, bbox_inches="tight")
     plt.close()
+    
+    # Plot variance ratio if it exists in results
+    if "variance_ratio" in results:
+        variance_ratios = results["variance_ratio"]
+        ratios = [variance_ratios[layer] for layer in layer_names]
+        
+        plt.figure(figsize=(12, 8))
+        plt.plot(range(len(layer_names)), ratios, 'o-', linewidth=2, markersize=10, color='#2E86AB')
+        
+        # Add horizontal line at y=1 to show where variance equals target variance
+        plt.axhline(y=1.0, color='red', linestyle='--', alpha=0.7, linewidth=2, label='Equal Variance')
+        
+        plt.title(f"{title} - Variance Ratio Across Layers", fontsize=18)
+        plt.ylabel("Variance Ratio (Predictions / Targets)", fontsize=16)
+        plt.xticks(range(len(layer_names)), x_axis_labels, rotation=45, fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='best', fontsize=14)
+        plt.tight_layout()
+        plt.savefig(Path(results_dir) / "variance_ratio.pdf", dpi=300, bbox_inches="tight")
+        plt.close()
