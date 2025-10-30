@@ -84,22 +84,28 @@ plot_ablation_metrics(esol_results, Path("results/esol"))
 # on the training data
 median_idx = len(full_data) // 2
 median_molecule = full_data.sort_values(TARGET_COLUMN).iloc[median_idx]["smiles"]
-min_max_median_molecules = [
-    full_data.nlargest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # max
-    median_molecule,  # median
-    full_data.nsmallest(1, TARGET_COLUMN)["smiles"].to_list()[0],  # min
-]
-# Get actual target values for these molecules
-actual_targets = [
-    full_data.nlargest(1, TARGET_COLUMN)[TARGET_COLUMN].to_list()[0],  # max value
-    full_data.sort_values(TARGET_COLUMN).iloc[median_idx][TARGET_COLUMN],  # median value
-    full_data.nsmallest(1, TARGET_COLUMN)[TARGET_COLUMN].to_list()[0],  # min value
-]
-min_max_median_molecules
+
+# Flatten the list to get a simple list of SMILES strings
+max_smiles = full_data.nlargest(1128/2, TARGET_COLUMN)["smiles"].to_list()
+min_smiles = full_data.nsmallest(1128/2, TARGET_COLUMN)["smiles"].to_list()
+min_max_median_molecules = max_smiles + [median_molecule] + min_smiles
+
+# Get actual target values for these molecules (also flattened)
+max_targets = full_data.nlargest(1128/2, TARGET_COLUMN)[TARGET_COLUMN].to_list()
+median_target = full_data.sort_values(TARGET_COLUMN).iloc[median_idx][TARGET_COLUMN]
+min_targets = full_data.nsmallest(1128/2, TARGET_COLUMN)[TARGET_COLUMN].to_list()
+actual_targets = max_targets + [median_target] + min_targets
 
 results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_molecules, tokenizer)
-print(results)
-plot_individual_molecules_regression_lens(results, results_dir=Path("results/esol/example_regression_lens"), molecule_labels = ["Molecule 1", "Molecule 2", "Molecule 3"], actual_targets=actual_targets, target_labels=["maximum", "median", "minimum"])
+plot_individual_molecules_regression_lens(
+    results, 
+    results_dir=Path("results/esol/example_regression_lens"), 
+    molecule_labels=[f"Molecule {i+1}" for i in range(1129)], 
+    actual_targets=actual_targets, 
+    target_labels=[f"rank {i+1}" for i in range(1129)]
+)
+
+results
 # %% [markdown]
 # Now we do regression lens on groups of molecules
 # First example group
@@ -112,16 +118,23 @@ plot_individual_molecules_regression_lens(results, results_dir=Path("results/eso
 # example_group_results = compare_molecule_groups_regression_lens(tl_encoder, tl_regressor, scaler, example_molecule_groups, tokenizer, DEVICE)
 # plot_group_molecules_regression_lens(example_group_results, results_dir=Path("results/ESOL/example_regression_lens"))
 
-# With clustering
-molecule_groups = {f"Cluster {cluster + 1}": group['smiles'].tolist() 
-                   for cluster, group in full_data.groupby('cluster')}
+# With clustering - build both groups and targets in one pass to ensure alignment
+molecule_groups = {}
+ordered_targets = []
+for cluster, group in full_data.groupby('cluster'):
+    cluster_name = f"Cluster {cluster + 1}"
+    molecule_groups[cluster_name] = group['smiles'].tolist()
+    ordered_targets.extend(group[TARGET_COLUMN].tolist())
 
 group_results = compare_molecule_groups_regression_lens(
     tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer, 
-    targets=full_data[TARGET_COLUMN].tolist(), results_dir="results/esol/regression_lens", device=DEVICE
+    targets=ordered_targets, results_dir="results/esol/regression_lens", device=DEVICE
 )
 plot_group_molecules_regression_lens(group_results, results_dir=Path("results/esol/regression_lens"))
 
+group_results
+
+ordered_targets
 
 # %% 
 # Now for **qm9 dataset**
@@ -195,12 +208,17 @@ results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_m
 plot_individual_molecules_regression_lens(results, results_dir=Path("results/qm9_1/example_regression_lens"), molecule_labels = ["Molecule 4", "Molecule 5", "Molecule 6"], y_label = "Gibbs Free Energies of Atomization At 298K", title = "QM9", actual_targets=actual_targets, target_labels=["maximum", "median", "minimum"])
 
 # %% 
-molecule_groups = {f"Cluster {cluster + 1}": group['smiles'].tolist() 
-                   for cluster, group in full_data.groupby('cluster')}
+# With clustering - build both groups and targets in one pass to ensure alignment
+molecule_groups = {}
+ordered_targets = []
+for cluster, group in full_data.groupby('cluster'):
+    cluster_name = f"Cluster {cluster + 1}"
+    molecule_groups[cluster_name] = group['smiles'].tolist()
+    ordered_targets.extend(group[TARGET_COLUMN].tolist())
 
 group_results = compare_molecule_groups_regression_lens(
     tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer,
-    targets=full_data[TARGET_COLUMN].tolist(), results_dir="results/qm9_1/regression_lens", device=DEVICE
+    targets=ordered_targets, results_dir="results/qm9_1/regression_lens", device=DEVICE
 )
 plot_group_molecules_regression_lens(group_results, results_dir=Path("results/qm9_1/regression_lens"), mean_y_label = "Mean Gibbs Free Energies of Atomization At 298K", var_y_label = "Variance Gibbs Free Energies of Atomization At 298K", title = "QM9")
 
@@ -278,12 +296,17 @@ results = run_regression_lens(tl_encoder, tl_regressor, scaler, min_max_median_m
 plot_individual_molecules_regression_lens(results, results_dir=Path("results/hce/example_regression_lens"), molecule_labels = ["Molecule 7", "Molecule 8", "Molecule 9"], y_label = "Power Conversion Efficiency", title = "HCE", actual_targets=actual_targets, target_labels=["maximum", "median", "minimum"])
 
 # %% 
-molecule_groups = {f"Cluster {cluster + 1}": group['smiles'].tolist() 
-                   for cluster, group in full_data.groupby('cluster')}
+# With clustering - build both groups and targets in one pass to ensure alignment
+molecule_groups = {}
+ordered_targets = []
+for cluster, group in full_data.groupby('cluster'):
+    cluster_name = f"Cluster {cluster + 1}"
+    molecule_groups[cluster_name] = group['smiles'].tolist()
+    ordered_targets.extend(group[TARGET_COLUMN].tolist())
 
 group_results = compare_molecule_groups_regression_lens(
     tl_encoder, tl_regressor, scaler, molecule_groups, tokenizer,
-    targets=full_data[TARGET_COLUMN].tolist(), results_dir="results/hce/regression_lens", device=DEVICE
+    targets=ordered_targets, results_dir="results/hce/regression_lens", device=DEVICE
 )
 plot_group_molecules_regression_lens(group_results, results_dir=Path("results/hce/regression_lens"), mean_y_label = "Mean Power Conversion Efficiency", var_y_label = "Variance Power Conversion Efficiency", title = "HCE")
 

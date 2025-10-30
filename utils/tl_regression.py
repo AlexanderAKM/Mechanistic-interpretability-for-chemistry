@@ -19,8 +19,7 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import seaborn as sns
+from sklearn.metrics import r2_score
 import torch
 import transformer_lens as tl
 from transformers import RobertaTokenizerFast
@@ -162,10 +161,23 @@ def compare_molecule_groups_regression_lens(
     for layer in layer_names:
         pred_variance = np.var(all_predictions_by_layer[layer])
         variance_ratios[layer] = pred_variance / target_variance
+
+    print("Targets (first 20):", targets[:20])
+    print(f"max target and min: {min(targets), max(targets)}")
+    for layer in layer_names:
+        print(f"max and min are {max(all_predictions_by_layer[layer]), min(all_predictions_by_layer[layer])}")
+        print(f"Layer {layer} predictions (first 20):", all_predictions_by_layer[layer][:20])
+    
+    # Compute R^2 per layer
+    r2_scores = {}
+    for layer in layer_names:
+            r2_scores[layer] = r2_score(targets, all_predictions_by_layer[layer])
     
     results["target_variance"] = target_variance
     results["variance_ratio"] = variance_ratios
+    results["r2_scores"] = r2_scores
     print(f"Variance ratios by layer: {variance_ratios}")
+    print(f"R² scores by layer: {r2_scores}")
     
     # Save predictions to CSV if directory provided
     if results_dir is not None:
@@ -234,12 +246,15 @@ def plot_group_molecules_regression_lens(
 ):
     os.makedirs(results_dir, exist_ok=True)
 
-    # Determine layer order from the first group's mean dict (skip special keys like 'variance_ratio')
-    first_group = next(iter({k: v for k, v in results.items() if k != "variance_ratio" and k != "target_variance"}.values()))
+    # Define special keys that are not group data
+    special_keys = {"variance_ratio", "target_variance", "r2_scores"}
+    
+    # Determine layer order from the first group's mean dict (skip special keys)
+    first_group = next(iter({k: v for k, v in results.items() if k not in special_keys}.values()))
     layer_names = list(first_group["mean"].keys())
     
     # Set up continuous color palette for all groups (excluding special keys)
-    group_items = [(k, v) for k, v in results.items() if k != "variance_ratio" and k != "target_variance"]
+    group_items = [(k, v) for k, v in results.items() if k not in special_keys]
     n_groups = len(group_items)
     colors = plt.cm.turbo(np.linspace(0, 1, n_groups))
 
@@ -294,4 +309,26 @@ def plot_group_molecules_regression_lens(
         plt.legend(loc='best', fontsize=14)
         plt.tight_layout()
         plt.savefig(Path(results_dir) / "variance_ratio.pdf", dpi=300, bbox_inches="tight")
+        plt.close()
+
+    # Plot variance ratio times R^2 if it exists in results
+    if "variance_ratio" and "r2_scores" in results:
+        variance_ratios = results["variance_ratio"]
+        r2_scores = results["r2_scores"]
+        ratios = [variance_ratios[layer] * r2_scores[layer] for layer in layer_names]
+        
+        plt.figure(figsize=(12, 8))
+        plt.plot(range(len(layer_names)), ratios, 'o-', linewidth=2, markersize=10, color='#2E86AB')
+        
+        # Add horizontal line at y=1 to show where variance equals target variance
+        plt.axhline(y=1.0, color='red', linestyle='--', alpha=0.7, linewidth=2, label='Equal Variance')
+        
+        plt.title(f"{title} - Variance Ratio Across Layers", fontsize=18)
+        plt.ylabel("Variance Ratio (Predictions / Targets) x R^2", fontsize=16)
+        plt.xticks(range(len(layer_names)), x_axis_labels, rotation=45, fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='best', fontsize=14)
+        plt.tight_layout()
+        plt.savefig(Path(results_dir) / "variance_ratio_R2.pdf", dpi=300, bbox_inches="tight")
         plt.close()
