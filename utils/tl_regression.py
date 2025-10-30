@@ -332,3 +332,60 @@ def plot_group_molecules_regression_lens(
         plt.tight_layout()
         plt.savefig(Path(results_dir) / "variance_ratio_R2.pdf", dpi=300, bbox_inches="tight")
         plt.close()
+
+    # Plot variance and R^2 if it exists in results
+    if "variance_ratio" and "r2_scores" in results:
+        variance_ratios = results["variance_ratio"]
+        r2_scores = results["r2_scores"]
+        
+        # Extract values in the same order as layer_names
+        variance_ratio_values = [variance_ratios[layer] for layer in layer_names]
+        r2_values = [r2_scores[layer] for layer in layer_names]
+        
+        plt.figure(figsize=(12, 8))
+        colors = plt.cm.turbo(np.linspace(0, 1, 2))
+
+        plt.plot(range(len(layer_names)), variance_ratio_values, 'o-', linewidth=2, markersize=10, color=colors[0], label='Variance Ratio')
+        plt.plot(range(len(layer_names)), r2_values, 'o-', linewidth=2, markersize=10, color=colors[1], label='R²')
+
+        # Add horizontal line at y=1 to show where variance equals target variance
+        plt.axhline(y=1.0, color='red', linestyle='--', alpha=0.7, linewidth=2, label='Equal Variance')
+        
+        plt.title(f"{title} - Variance and R2 Across Layers", fontsize=18)
+        plt.ylabel("Variance Ratio and R^2", fontsize=16)
+        plt.xticks(range(len(layer_names)), x_axis_labels, rotation=45, fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='best', fontsize=14)
+        plt.tight_layout()
+        plt.savefig(Path(results_dir) / "variance_ratio_and_R2.pdf", dpi=300, bbox_inches="tight")
+        plt.close()
+
+    # Plot variance ratio × R² for each cluster/group
+    if "variance_ratio" and "r2_scores" and "target_variance" in results:
+        r2_scores = results["r2_scores"]
+        r2_values = [r2_scores[layer] for layer in layer_names]
+        target_variance = results["target_variance"]
+        
+        plt.figure(figsize=(12, 8))
+        
+        # Recreate colors array for groups (was overwritten earlier)
+        group_colors = plt.cm.turbo(np.linspace(0, 1, n_groups))
+        
+        # Plot variance ratio × R² for each group
+        for i, (group_name, group_data) in enumerate(group_items):
+            # Calculate variance ratio for this group: group variance / target variance
+            variance_ratios = [group_data["variance"][layer] / target_variance for layer in layer_names]
+            variance_ratio_times_r2 = [var_ratio * r2 for var_ratio, r2 in zip(variance_ratios, r2_values)]
+            plt.plot(range(len(layer_names)), variance_ratio_times_r2, 'o-', alpha=0.8, 
+                    label=group_name, color=group_colors[i], linewidth=2, markersize=8)
+        
+        plt.title(f"{title} - Group Variance Ratio × R² Across Layers", fontsize=18)
+        plt.ylabel("Variance Ratio × R²", fontsize=16)
+        plt.xticks(range(len(layer_names)), x_axis_labels, rotation=45, fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.grid(True, alpha=0.3)
+        plt.legend(loc='best', fontsize=12)
+        plt.tight_layout()
+        plt.savefig(Path(results_dir) / "group_variance_ratio_times_R2.pdf", dpi=300, bbox_inches="tight")
+        plt.close()
